@@ -1,22 +1,22 @@
-import math
-import heapq
 from graph import Graph
-from dstar import DStar, Entry, Key
+from dstar import DStar
 
-# TODO maze generation, maze updating, path reconstruction, visualization, creating maze (file or interactive)
+# TODO-NE: maze generation, visualization 
+# TODO debugging dstar, maze updating, Procedure Main(), allow maze creation interactively
 
-n = ?
+n = 2
 # create Graph
 G = Graph(n)
-G.SwapEndpoints()
+last = G.start
 dstar = DStar(G)
-dstar.ComputeShortestPath()
+# temporary addition for motivation 
+# (so that at least the case that G.start == G.goal works)
+i = 0
 while (G.start != G.goal):
+    if i == 0:
+        dstar.ComputeShortestPath()
     # no known path
     if dstar.rhs[G.start] == float('inf'):
         break
-    G.start = min([G.Cost(s) + dstar.g[s] for s in G.Adjacent(G.start)])
-    if Graph has changed:
-        dstar.k_m = dstar.k_m + dstar.h(G.last, G.start)
-        G.SwapEndpoints()
-      
+    G.MoveStart(min([G.Cost(s) + dstar.g[s] for s in G.Adjacent(G.start)]))
+    i += 1

@@ -1,16 +1,6 @@
-import math
 import heapq
 from graph import Graph
-# Graph = G
-# S = G.vertices
-# Current vertex = s
-# Cost of path between vertices = c(v1, v2). Infinity cost represents path to wall.
-# List of predecessor vertices = G.Pred(S)
-# List of sucessor vertices = G.Succ(S)
-# Start = g.start
-# End/Vent = g.end
-# Estimated cost from current to end = g(s)
-# U = fringe. Holds Entries
+from typing import Tuple
 
 class Key:
     def __init__(self, k1, k2):
@@ -24,6 +14,12 @@ class Key:
             return True
         else:
             return False
+        
+    def __str__(self):
+        return f'({self.k1}, {self.k2})'
+    
+    def __repr__(self):
+        return str(self)
 
 class Entry:
     def __init__(self, s, k : Key):
@@ -36,6 +32,12 @@ class Entry:
     def __eq__(self, other):
         return self.s == other.s
     
+    def __str__(self):
+        return f'[{self.s}, {self.k}]'
+    
+    def __repr__(self):
+        return str(self)
+    
 class DStar:
     # procedure Initialize()
     def __init__(self, G : Graph):
@@ -46,7 +48,7 @@ class DStar:
         self.g = {}
 
         # maybe change this to only a few vertices
-        for s in G.vertices:
+        for s in self.G.Vertices():
             self.rhs[s] = float('inf')
             self.g[s] = float('inf')
         
@@ -54,37 +56,37 @@ class DStar:
         heapq.heappush(self.U, Entry(self.G.goal, Key(self.h(self.G.start, self.G.goal), 0)))
     
     # Our Hueristic: Manhattan Distance
-    def h(self, s1, s2) -> int:
-        return abs(s1.row - s2.row) + abs(s1.col - s2.col)
+    def h(self, s1 : Tuple[int, int], s2 : Tuple[int, int]) -> int:
+        return abs(s1[0] - s2[0]) + abs(s1[1] - s2[1])
     
     # procedure CalculateKey(s)
-    def CalculateKey(self, s) -> Key:
+    def CalculateKey(self, s : Tuple[int, int]) -> Key:
         return Key(min(self.g[s], self.rhs[s]) + self.h(self.G.start, s) + self.k_m, min(self.g[s], self.rhs[s]))
     
     # checks if s is in U
-    def Contains(self, s) -> bool: 
+    def Contains(self, s : Tuple[int, int]) -> bool: 
         for entry in self.U:
             if (entry.s == s):
                 return True
         return False
     
     # removes s from U
-    def Remove(self, s) -> None:
+    def Remove(self, s : Tuple[int, int]) -> None:
         # create entry with dummy key
         self.U.remove(Entry(s, Key(-1, -1)))
         heapq.heapify(self.U)
     
     # procedure UpdateVertex(s)
-    def UpdateVertex(self, s) -> None:
+    def UpdateVertex(self, s : Tuple[int, int]) -> None:
         if (self.Contains(s)):
             self.Remove(s)
         if (self.g[s] != self.rhs[s]):
             heapq.heappush(self.U, Entry(s, self.CalculateKey(s)))
 
     # procedure ComputeShortestPath()
-    def ComputeShortestPath(self):
+    def ComputeShortestPath(self) -> None:
         while (self.U[0].k < self.CalculateKey(self.G.start) or self.rhs[self.G.start] > self.g[self.G.start]):
-            s = self.U[0]
+            s = self.U[0].s
             k_old = self.U[0].k
             k_new = self.CalculateKey(s)
             
@@ -97,16 +99,16 @@ class DStar:
 
                 for u in self.G.Adjacent(s):
                     if (u != self.G.goal):
-                        self.rhs[u] = min(self.rhs[u], self.G.Cost(s), + self.g[s])
+                        self.rhs[u] = min(self.rhs[u], self.G.Cost(u, s), + self.g[s])
                         self.UpdateVertex(u)
             else:
                 g_old = self.g[s]
                 self.g[s] = float('inf')
                 
                 # the local neighborhood— everything around the vertex, including itself
-                u_and_adjacents = [u] + self.G.Adjacent(s)
-                for u in u_and_adjacents:
-                    if (self.rhs[u] == self.G.Cost(s) + g_old):
+                s_and_adjacents = [s] + self.G.Adjacent(s)
+                for u in s_and_adjacents:
+                    if (self.rhs[u] == self.G.Cost(u, s) + g_old):
                         if (u != self.G.goal):
-                            self.rhs[u] = min([self.G.Cost(s) + self.g[s] for s in self.G.Adjacent(u)])
+                            self.rhs[u] = min([self.G.Cost(u, u_adj) + self.g[u_adj] for u_adj in self.G.Adjacent(u)])
                     self.UpdateVertex(u)
