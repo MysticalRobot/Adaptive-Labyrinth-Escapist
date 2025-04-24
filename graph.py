@@ -11,14 +11,18 @@ class Graph:
     # Current vertex = s
     # Cost of path between vertices = c(v1, v2). Infinity cost represents path to wall.
     # List of predecessor and successor vertices = G.Adjacent(s)
-    # Start = g.start
+    # Start/Amongus/Sussy/Baka = g.start
     # End/Vent = g.end
     # Estimated cost from start to current = g(s)
-    # start/goal are represented by -1 in the maze
-    # vertices are 0 are at even row and col indices
+    
     # edges are at odd row or col indices
-    # edges with value 1 do no exist (walls)
 
+    # to allow/disallow diagonal movement, swap the commented
+    # portions in self.Adjacent() and comment out or uncomment the 
+    # portion that disregards diagonal edges in self.UpToKSomeWhatCloseEdges() 
+
+    # constants for differentiating spots on the maze 
+    # (all positive value so they print nicely)
     EMPTY_OR_EDGE = 0
     ENDPOINT = 1 # (start or goal vertices)
     NEW_EDGE = 2 # (newly removed wall)
@@ -76,7 +80,7 @@ class Graph:
             # try removing edge
             self.maze[e[0]][e[1]] = self.REMOVED_EDGE
             # if removing it disconnected the endpoints, restore the edge
-            if not self.PathExists():
+            if not self.FindPath()[0]:
                 self.maze[e[0]][e[1]] = prev_value
             # otherwise, keep it removed
             else:
@@ -84,7 +88,7 @@ class Graph:
         return removed_edges
     
     # returns up to k edges around self.start that may or may not exist
-    def UpToKSomeWhatCloseEdges(self, k, edge_exists) -> List[Tuple[int, int]]:
+    def UpToKSomeWhatCloseEdges(self, k : int, edge_exists : bool) -> List[Tuple[int, int]]:
         edges = []
         # gather edges from a window surrounding self.start
         half_window_size = self.n // 2
@@ -92,9 +96,14 @@ class Graph:
         col_lo, col_hi = max(0, self.start[1] - half_window_size), min(self.n, self.start[1] + half_window_size)
         for row in range(row_lo, row_hi):
             for col in range(col_lo, col_hi):
-                # consider only spots representing edges (either row or col are odd)
+                # skip vertices
+                if not ((row & 1) + (col & 1)): 
+                    continue
+                '''
+                # disregard diagonal edges
                 if not ((row & 1) ^ (col & 1)):
                     continue
+                '''
                 # at one time, consider only either edges that do not exist (i.e. walls), or edges that do exist
                 if ((self.maze[row][col] == self.NO_EDGE or self.maze[row][col] == self.REMOVED_EDGE) and not edge_exists) or \
                 ((self.maze[row][col] == self.EMPTY_OR_EDGE or self.maze[row][col] == self.NEW_EDGE) and edge_exists):
@@ -103,33 +112,43 @@ class Graph:
         r.shuffle(edges)
         return edges[:min(k, len(edges))]
 
-    # checks whether a path exists to the goal via a BFS
-    def PathExists(self) -> bool:
+    # returns a bool indicating whether a path from the start to the goal was found and the path itself
+    # finds the path using BFS
+    def FindPath(self) -> Tuple[bool, List[Tuple[int, int]]]:
+        path = []
         # consider edge case (common with small mazes)
         if self.start == self.goal:
-            return True
+            return (True, path) 
         # track visited vertices
-        visited = [[False] * self.n for _ in range(self.n)] 
+        parent = [[(-1, -1)] * self.n for _ in range(self.n)] 
+        # set the parent tree's root to be its own parent
+        parent[self.goal[0]][self.goal[1]] = self.goal
         # fringe stored with queue
-        q = deque([self.start])
+        q = deque([self.goal])
         while q:
             s = q.popleft()
-            visited[s[0]][s[1]] = True
             # consider the adjacent vertices
             for u in self.Adjacent(s):
                 e = self.Edge(s, u)
                 # disregard visited or unreachable vertices
-                if visited[u[0]][u[1]] or self.maze[e[0]][e[1]] == self.NO_EDGE or \
+                if parent[u[0]][u[1]] != (-1, -1) or self.maze[e[0]][e[1]] == self.NO_EDGE or \
                     self.maze[e[0]][e[1]] == self.REMOVED_EDGE:
                     continue 
-                # return True if path found
-                elif u == self.goal:
-                    return True
-                # add unprocessed vertices to the fringe
+                # add unprocessed vertices to the fringe and set their parent
                 else:
                     q.append(u)
+                    parent[u[0]][u[1]] = s
         # no path was found
-        return False
+        if parent[self.start[0]][self.start[1]] == (-1, -1):
+            return (False, path)
+        # reconstruct path from parent tree
+        s = parent[self.start[0]][self.start[1]]
+        while True:
+            path.append(s)
+            if parent[s[0]][s[1]] == s:
+                break 
+            s = parent[s[0]][s[1]] 
+        return (True, path)
     
     # moves the start to the provided location
     def MoveStart(self, new_start : Tuple[int, int]) -> None:
@@ -145,18 +164,14 @@ class Graph:
     def GenerateWalls(self, s : Tuple[int, int], visited : List[List[bool]]) -> None:
         # mark current as visited
         visited[s[0]][s[1]] = True 
-        # consider 4 adjacent vertices in random order
-        choices = [(-2, 0), (0, -2), (2, 0), (0, 2)]
-        r.shuffle(choices)
-        for i, j in choices:
-            u = (s[0] + i, s[1] + j)
-            # ensure index validity
-            if u[0] < 0 or u[0] >= self.n or u[1] < 0 or u[1] >= self.n:
-                continue
+        # consider adjacent vertices in random order
+        adjacent = self.Adjacent(s)
+        r.shuffle(adjacent)
+        for u in adjacent:
             # skip visited adjacent vertices
             if visited[u[0]][u[1]]:
                 continue
-            # remove wall if not visited
+            # remove wall (add edge) if not visited
             e = self.Edge(s, u)
             self.maze[e[0]][e[1]] = self.EMPTY_OR_EDGE
             # continue DFS
@@ -173,6 +188,15 @@ class Graph:
     # returns a list of all the valid adjacent vertices
     def Adjacent(self, s : Tuple[int, int]) -> List[Tuple[int, int]]:
         adjacent = []
+        '''
+        # consider up to 4 adjacent vertices
+        for i, j in [(-2, 0), (0, -2), (2, 0), (0, 2)]:
+            u = (s[0] + i, s[1] + j) 
+            # ensure index validity
+            if u[0] >= 0 and u[0] < self.n and u[1] >= 0 and u[1] < self.n:
+                adjacent.append(u)
+        '''
+        # '''
         # consider up to 8 adjacent vertices
         for i in -2, 0, 2:
             for j in -2, 0, 2:
@@ -183,6 +207,7 @@ class Graph:
                 # ensure index validity
                 if u[0] >= 0 and u[0] < self.n and u[1] >= 0 and u[1] < self.n:
                     adjacent.append(u)
+        # '''
         return adjacent
 
     # returns the edge cost between s and u

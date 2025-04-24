@@ -1,42 +1,7 @@
 import heapq
+from entry import Entry, Key
 from graph import Graph
 from typing import Tuple
-
-class Key:
-    def __init__(self, k1, k2):
-        self.k1 = k1
-        self.k2 = k2
-
-    def __lt__(self, other):
-        if (self.k1 < other.k1):
-            return True
-        elif (self.k1 == other.k1 and self.k2 <= other.k2):
-            return True
-        else:
-            return False
-        
-    def __str__(self):
-        return f'({self.k1}, {self.k2})'
-    
-    def __repr__(self):
-        return str(self)
-
-class Entry:
-    def __init__(self, s, k : Key):
-        self.s = s
-        self.k = k
-
-    def __lt__(self, other):
-        self.k < other.k
-
-    def __eq__(self, other):
-        return self.s == other.s
-    
-    def __str__(self):
-        return f'[{self.s}, {self.k}]'
-    
-    def __repr__(self):
-        return str(self)
     
 class DStar:
     # procedure Initialize()
@@ -65,10 +30,8 @@ class DStar:
     
     # checks if s is in U
     def Contains(self, s : Tuple[int, int]) -> bool: 
-        for entry in self.U:
-            if (entry.s == s):
-                return True
-        return False
+        # create entry with dummy key
+        return Entry(s, Key(-1, -1)) in self.U
     
     # removes s from U
     def Remove(self, s : Tuple[int, int]) -> None:
@@ -78,10 +41,12 @@ class DStar:
     
     # procedure UpdateVertex(s)
     def UpdateVertex(self, s : Tuple[int, int]) -> None:
-        if (self.Contains(s)):
-            self.Remove(s)
         if (self.g[s] != self.rhs[s]):
+            if (self.Contains(s)):
+                self.Remove(s)
             heapq.heappush(self.U, Entry(s, self.CalculateKey(s)))
+        elif (self.Contains(s)):
+            self.Remove(s)
 
     # procedure ComputeShortestPath()
     def ComputeShortestPath(self) -> None:
@@ -90,10 +55,7 @@ class DStar:
             k_old = self.U[0].k
             k_new = self.CalculateKey(s)
             
-            if (k_old < k_new):
-                self.Remove(s)
-                heapq.heappush(self.U, Entry(s, k_new))
-            elif (self.g[s] > self.rhs[s]):
+            if (self.g[s] > self.rhs[s]):
                 self.g[s] = self.rhs[s]
                 self.Remove(s)
 
@@ -101,6 +63,9 @@ class DStar:
                     if (u != self.G.goal):
                         self.rhs[u] = min(self.rhs[u], self.G.Cost(u, s), + self.g[s])
                         self.UpdateVertex(u)
+            elif (k_old < k_new):
+                self.Remove(s)
+                heapq.heappush(self.U, Entry(s, k_new))
             else:
                 g_old = self.g[s]
                 self.g[s] = float('inf')

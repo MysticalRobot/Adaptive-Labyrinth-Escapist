@@ -2,21 +2,25 @@ from graph import Graph
 from dstar import DStar
 
 # TODO (almost done): maze generation, visualization, maze updating
-# TODO debug dstar, complete Procedure Main() (and integrate dstar into game.py)
+# TODO debug dstar, complete Procedure Main() (and integrate dstar into game.py), graph creation from text file input
 
 n = 2
 # create Graph
 G = Graph(n)
 last = G.start
 dstar = DStar(G)
-# temporary addition for motivation 
-# (so that at least the case that G.start == G.goal works)
-i = 0
+# print graph
+print(G)
+dstar.ComputeShortestPath()
 while (G.start != G.goal):
-    if i == 0:
-        dstar.ComputeShortestPath()
     # no known path
     if dstar.rhs[G.start] == float('inf'):
         break
-    G.MoveStart(min([G.Cost(s) + dstar.g[s] for s in G.Adjacent(G.start)]))
-    i += 1
+    # pick the successor s' that minimizes c(s, s') + g(s')
+    val, min_s = float('inf'), None
+    for s in G.Adjacent(G.start):
+        curr_val = G.Cost(G.start, s) + dstar.g[s] 
+        if curr_val <= val:
+            val, min_s = curr_val, s
+    # TODO min_s is sometimes None, but there should be at least 1 successor 
+    G.MoveStart(min_s)
