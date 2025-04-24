@@ -1,8 +1,8 @@
 from graph import Graph
 from dstar import DStar
 
-# TODO-NE: maze generation, visualization 
-# TODO debugging dstar, maze updating, Procedure Main(), allow maze creation interactively
+# TODO (almost done): maze generation, visualization, maze updating
+# TODO debug dstar, complete Procedure Main() (and integrate dstar into game.py)
 
 n = 2
 # create Graph

@@ -1,5 +1,6 @@
 import sys
 import random as r
+from collections import deque
 from typing import Tuple, List
 
 class Graph:
@@ -13,10 +14,16 @@ class Graph:
     # Start = g.start
     # End/Vent = g.end
     # Estimated cost from start to current = g(s)
-    # start/goal are represented by 2 in the maze
+    # start/goal are represented by -1 in the maze
     # vertices are 0 are at even row and col indices
     # edges are at odd row or col indices
     # edges with value 1 do no exist (walls)
+
+    EMPTY_OR_EDGE = 0
+    ENDPOINT = 1 # (start or goal vertices)
+    NEW_EDGE = 2 # (newly removed wall)
+    NO_EDGE = 3 # (wall)
+    REMOVED_EDGE = 4 # (newly added wall)
 
     # n = number of rows and columns (nxn maze)
     # precondition: n > 1
@@ -27,9 +34,9 @@ class Graph:
         # place walls at odd indices
         for row in range(self.n):
             if row & 1:
-                self.maze.append([1] * self.n)
+                self.maze.append([self.NO_EDGE] * self.n)
             else:
-                self.maze.append([col & 1 for col in range(self.n)])
+                self.maze.append([self.NO_EDGE if col & 1 else self.EMPTY_OR_EDGE for col in range(self.n)])
         # seed random number generator
         r.seed()
         # vertices are only at even indices
@@ -38,41 +45,104 @@ class Graph:
         self.start = (r.choice(vertex_indices), r.choice(vertex_indices))
         self.goal = (r.choice(vertex_indices), r.choice(vertex_indices))
         # mark start and end
-        self.maze[self.start[0]][self.start[1]] = 2
-        self.maze[self.goal[0]][self.goal[1]] = 2
+        self.maze[self.start[0]][self.start[1]] = self.ENDPOINT
+        self.maze[self.goal[0]][self.goal[1]] = self.ENDPOINT
         # knock down walls until the graph is connected
         visited = [[False] * self.n for _ in range(self.n)] 
         # (cheekily) increase the recursion limit to allow for larger maze generation
         sys.setrecursionlimit(10000) 
-        self.RemoveEdges(self.start, visited)
+        self.GenerateWalls(self.start, visited)
 
     # returns string representation of maze
     def __str__(self) -> str:
         rows = [''.join([str(s) for s in row]) for row in self.maze]
         return '\n'.join(rows)
 
-    # TODO knocks some walls down and returns the list of those edges
-    # maybe mark new edges with value 3 or something for visualization
-    def NewEdges(self) -> List[Tuple[int, int]]:
-        raise NotImplementedError()
+    # tries to remove walls near self.start by adding the edges that it returns
+    def AddEdges(self) -> List[Tuple[int, int]]:
+        # 9 because that is the size of the smallest maze being generated (2x2)
+        new_edges = self.UpToKSomeWhatCloseEdges(5, edge_exists=False)
+        # remove walls 
+        for e in new_edges:
+            self.maze[e[0]][e[1]] = self.NEW_EDGE
+        return new_edges
+
+    # tries to add walls near self.start by removing the edges that it returns
+    def RemoveEdges(self) -> List[Tuple[int, int]]:
+        removed_edges = []
+        # 9 because that is the size of the smallest maze being generated (2x2)
+        for e in self.UpToKSomeWhatCloseEdges(5, edge_exists=True):
+            prev_value = self.maze[e[0]][e[1]]
+            # try removing edge
+            self.maze[e[0]][e[1]] = self.REMOVED_EDGE
+            # if removing it disconnected the endpoints, restore the edge
+            if not self.PathExists():
+                self.maze[e[0]][e[1]] = prev_value
+            # otherwise, keep it removed
+            else:
+                removed_edges.append(e)
+        return removed_edges
     
-    # TODO raises some walls and returns the list of those edges
-    # maybe mark removed edges with value 4 or something for visualization
-    def RemovedEdges(self) -> List[Tuple[int, int]]:
-        raise NotImplementedError()
+    # returns up to k edges around self.start that may or may not exist
+    def UpToKSomeWhatCloseEdges(self, k, edge_exists) -> List[Tuple[int, int]]:
+        edges = []
+        # gather edges from a window surrounding self.start
+        half_window_size = self.n // 2
+        row_lo, row_hi = max(0, self.start[0] - half_window_size), min(self.n, self.start[0] + half_window_size)
+        col_lo, col_hi = max(0, self.start[1] - half_window_size), min(self.n, self.start[1] + half_window_size)
+        for row in range(row_lo, row_hi):
+            for col in range(col_lo, col_hi):
+                # consider only spots representing edges (either row or col are odd)
+                if not ((row & 1) ^ (col & 1)):
+                    continue
+                # at one time, consider only either edges that do not exist (i.e. walls), or edges that do exist
+                if ((self.maze[row][col] == self.NO_EDGE or self.maze[row][col] == self.REMOVED_EDGE) and not edge_exists) or \
+                ((self.maze[row][col] == self.EMPTY_OR_EDGE or self.maze[row][col] == self.NEW_EDGE) and edge_exists):
+                    edges.append((row, col))
+        # randomize the result
+        r.shuffle(edges)
+        return edges[:min(k, len(edges))]
+
+    # checks whether a path exists to the goal via a BFS
+    def PathExists(self) -> bool:
+        # consider edge case (common with small mazes)
+        if self.start == self.goal:
+            return True
+        # track visited vertices
+        visited = [[False] * self.n for _ in range(self.n)] 
+        # fringe stored with queue
+        q = deque([self.start])
+        while q:
+            s = q.popleft()
+            visited[s[0]][s[1]] = True
+            # consider the adjacent vertices
+            for u in self.Adjacent(s):
+                e = self.Edge(s, u)
+                # disregard visited or unreachable vertices
+                if visited[u[0]][u[1]] or self.maze[e[0]][e[1]] == self.NO_EDGE or \
+                    self.maze[e[0]][e[1]] == self.REMOVED_EDGE:
+                    continue 
+                # return True if path found
+                elif u == self.goal:
+                    return True
+                # add unprocessed vertices to the fringe
+                else:
+                    q.append(u)
+        # no path was found
+        return False
     
     # moves the start to the provided location
     def MoveStart(self, new_start : Tuple[int, int]) -> None:
-        self.maze[self.start[0]][self.start[1]] = 0
+        self.maze[self.start[0]][self.start[1]] = self.EMPTY_OR_EDGE
         self.start = new_start
-        self.maze[self.start[0]][self.start[1]] = 2
+        self.maze[self.start[0]][self.start[1]] = self.ENDPOINT
 
     # returns the edge the two adjacent vertices
     def Edge(self, s : Tuple[int, int], u : Tuple[int, int]) -> Tuple[int, int]:
         return ((s[0] + u[0]) // 2, (s[1] + u[1]) // 2)
 
     # does DFS to remove walls until the graph is connected
-    def RemoveEdges(self, s : Tuple[int, int], visited : List[List[bool]]) -> None:
+    def GenerateWalls(self, s : Tuple[int, int], visited : List[List[bool]]) -> None:
         # mark current as visited
         visited[s[0]][s[1]] = True 
         # consider 4 adjacent vertices in random order
@@ -87,10 +157,10 @@ class Graph:
             if visited[u[0]][u[1]]:
                 continue
             # remove wall if not visited
-            row, col = self.Edge(s, u)
-            self.maze[row][col] = 0
+            e = self.Edge(s, u)
+            self.maze[e[0]][e[1]] = self.EMPTY_OR_EDGE
             # continue DFS
-            self.RemoveEdges(u, visited)
+            self.GenerateWalls(u, visited)
     
     def Vertices(self) -> List[Tuple[int, int]]:
         vertices = []
@@ -117,9 +187,9 @@ class Graph:
 
     # returns the edge cost between s and u
     def Cost(self, s : Tuple[int, int], u : Tuple[int, int]) -> float:
-        row, col = self.Edge(s, u)
+        e = self.Edge(s, u)
         # there is a wall between s and u (no edge between them)
-        if self.maze[row][col] == 1:
+        if self.maze[e[0]][e[1]] == self.NO_EDGE or self.maze[e[0]][e[1]] == self.REMOVED_EDGE:
             return float('inf')
         # same vertex
         elif s == u:

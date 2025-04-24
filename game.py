@@ -36,37 +36,40 @@ def draw_maze() -> None:
     for row in range(G.n):
         col_offset = 0
         for col in range(G.n):
-            block = G.maze[row][col]
-            # draw the lack of an edge as a wall
-            if block == 1:
+            curr = G.maze[row][col]
+            if curr == G.ENDPOINT: 
+                # draw the goal (vent) before the start (amongus) to account for overlap
+                if (row, col) == G.goal:
+                    screen.blit(vent, (G.goal[1] + col_offset, G.goal[0] + row_offset))
+                if (row, col) == G.start:
+                    amongus = amongus_right if facing_right else amongus_left
+                    screen.blit(amongus, (G.start[1] + col_offset, G.start[0] + row_offset))
+            # draw og walls black, and newly added walls red, and removed walls green
+            elif curr != G.EMPTY_OR_EDGE:
+                if curr == G.NO_EDGE:
+                    color = 'black'
+                elif curr == G.REMOVED_EDGE:
+                    color = 'red'
+                else:
+                    color = 'green'
                 width = edge_size if col & 1 else vertex_size
                 height = edge_size if row & 1 else vertex_size
-                pygame.draw.rect(screen, 'black', pygame.Rect(col + col_offset, row + row_offset, width, height))
-            elif block == 2: 
-              # draw the goal (vent) before the start (amongus) to account for overlap
-              if (row, col) == G.goal:
-                  screen.blit(vent, (G.goal[1] + col_offset, G.goal[0] + row_offset))
-              if (row, col) == G.start:
-                  amongus = amongus_right if facing_right else amongus_left
-                  screen.blit(amongus, (G.start[1] + col_offset, G.start[0] + row_offset))
+                pygame.draw.rect(screen, color, pygame.Rect(col + col_offset, row + row_offset, width, height))
             col_offset += edge_size if col & 1 else vertex_size
         row_offset += edge_size if row & 1 else vertex_size
     pygame.display.update() # update the screen
 
 while running:
-    # stop when user has x'd out the window
     for event in pygame.event.get():
+        # stop when user has x'd out the window
         if event.type == pygame.QUIT: 
             running = False
-
-    # TODO add key handling stuff here (for randomly removing or adding walls)
-    keys = pygame.key.get_pressed()      
-    '''
-    if keys[pygame.K_a]:  
-    if keys[pygame.K_d]:
-    '''
-  
-    draw_maze() # draw the maze and update the screen
-    clock.tick(60) # cap fps at 60
-
+        # add or remove some edges when requested by user
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_a:
+                G.AddEdges()
+            if event.key == pygame.K_d:
+                G.RemoveEdges()
+    draw_maze()
+    clock.tick(60) # cap at 60 fps
 pygame.quit()
