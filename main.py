@@ -4,9 +4,8 @@ from dstar import DStar
 # TODO (almost done): maze generation, visualization, maze updating
 # TODO debug dstar, complete Procedure Main() (and integrate dstar into game.py), graph creation from text file input
 
-n = 2
 # create Graph
-G = Graph(n)
+G = Graph(n=2, allow_diagonal_movement=False)
 last = G.start
 dstar = DStar(G)
 # print graph

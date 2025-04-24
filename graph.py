@@ -17,10 +17,6 @@ class Graph:
     
     # edges are at odd row or col indices
 
-    # to allow/disallow diagonal movement, swap the commented
-    # portions in self.Adjacent() and comment out or uncomment the 
-    # portion that disregards diagonal edges in self.UpToKSomeWhatCloseEdges() 
-
     # constants for differentiating spots on the maze 
     # (all positive value so they print nicely)
     EMPTY_OR_EDGE = 0
@@ -31,9 +27,10 @@ class Graph:
 
     # n = number of rows and columns (nxn maze)
     # precondition: n > 1
-    def __init__(self, n : int):
+    def __init__(self, n : int, allow_diagonal_movement : bool):
         self.old_n = n 
         self.n = self.old_n + self.old_n - 1
+        self.allow_diagonal_movement = allow_diagonal_movement
         self.maze = []
         # place walls at odd indices
         for row in range(self.n):
@@ -99,11 +96,9 @@ class Graph:
                 # skip vertices
                 if not ((row & 1) + (col & 1)): 
                     continue
-                '''
-                # disregard diagonal edges
-                if not ((row & 1) ^ (col & 1)):
+                # disregard diagonal edges if diagonal movement is disallowed
+                if not self.allow_diagonal_movement and not ((row & 1) ^ (col & 1)):
                     continue
-                '''
                 # at one time, consider only either edges that do not exist (i.e. walls), or edges that do exist
                 if ((self.maze[row][col] == self.NO_EDGE or self.maze[row][col] == self.REMOVED_EDGE) and not edge_exists) or \
                 ((self.maze[row][col] == self.EMPTY_OR_EDGE or self.maze[row][col] == self.NEW_EDGE) and edge_exists):
@@ -188,26 +183,16 @@ class Graph:
     # returns a list of all the valid adjacent vertices
     def Adjacent(self, s : Tuple[int, int]) -> List[Tuple[int, int]]:
         adjacent = []
-        '''
-        # consider up to 4 adjacent vertices
-        for i, j in [(-2, 0), (0, -2), (2, 0), (0, 2)]:
+        # consider up to 4 adjacent vertices by default
+        choices = [(-2, 0), (0, -2), (2, 0), (0, 2)]
+        # additionally consider 4 diagonal vertices
+        if self.allow_diagonal_movement:
+            choices += [(-2, -2), (-2, 2), (2, -2), (2, 2)]
+        for i, j in choices:
             u = (s[0] + i, s[1] + j) 
             # ensure index validity
             if u[0] >= 0 and u[0] < self.n and u[1] >= 0 and u[1] < self.n:
                 adjacent.append(u)
-        '''
-        # '''
-        # consider up to 8 adjacent vertices
-        for i in -2, 0, 2:
-            for j in -2, 0, 2:
-                # skip over the current vertex
-                if i == 0 and j == 0:
-                    continue
-                u = (s[0] + i, s[1] + j) 
-                # ensure index validity
-                if u[0] >= 0 and u[0] < self.n and u[1] >= 0 and u[1] < self.n:
-                    adjacent.append(u)
-        # '''
         return adjacent
 
     # returns the edge cost between s and u
