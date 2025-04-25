@@ -4,19 +4,7 @@ from collections import deque
 from typing import Tuple, List
 
 class Graph:
-
-    # Let us be schizophrenic
-    # Graph = G
-    # S = G.vertices
-    # Current vertex = s
-    # Cost of path between vertices = c(v1, v2). Infinity cost represents path to wall.
-    # List of predecessor and successor vertices = G.GetAdjacent(s)
-    # Start/Amongus/Sussy/Baka = g.start
-    # End/Vent = g.end
-    # Estimated cost from start to current = g(s)
     
-    # edges are at odd row or col indices
-
     # constants for differentiating spots on the maze 
     # (all positive value so they print nicely)
     EMPTY_OR_EDGE = 0 # (normal vertex or no wall)

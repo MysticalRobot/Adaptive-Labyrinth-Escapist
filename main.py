@@ -23,3 +23,4 @@ while (G.start != G.goal):
             val, min_s = curr_val, s
     # TODO min_s is sometimes None, but there should be at least 1 successor 
     G.MoveStart(min_s)
+    print(G)
