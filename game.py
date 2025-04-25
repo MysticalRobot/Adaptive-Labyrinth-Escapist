@@ -3,7 +3,7 @@ from graph import Graph
 from dstar import DStar
 
 # initialize a graph (and generate a maze)
-G = Graph(n=10, allow_diagonal_movement=False)
+G = Graph(n=10, allow_diagonal_movement=True)
 facing_right = True
 
 # load the images
@@ -29,13 +29,27 @@ screen = pygame.display.set_mode((dimension, dimension))
 clock = pygame.time.Clock()
 running = True
 
+# returns the color of the edge
+def get_edge_color(edge : int) -> str:
+    if edge == G.NO_EDGE:
+        return 'black'
+    elif edge == G.REMOVED_EDGE:
+        return 'red'
+    elif edge == G.NEW_EDGE: 
+        return 'green'
+    # this case generally isn't used
+    else:
+        return 'grey'
+
 # draws the maze
 def draw_maze() -> None:
     screen.fill('grey') # draw the background
     row_offset = 0
     for row in range(G.n):
+        is_horizontal_wall = G.IsHorizontalWall(row)
         col_offset = 0
         for col in range(G.n):
+            is_vertical_wall = G.IsVerticalWall(col)
             curr = G.maze[row][col]
             if curr == G.ENDPOINT: 
                 # draw the goal (vent) before the start (amongus) to account for overlap
@@ -46,17 +60,11 @@ def draw_maze() -> None:
                     screen.blit(amongus, (G.start[1] + col_offset, G.start[0] + row_offset))
             # draw og walls black, and newly added walls red, and removed walls green
             elif curr != G.EMPTY_OR_EDGE:
-                if curr == G.NO_EDGE:
-                    color = 'black'
-                elif curr == G.REMOVED_EDGE:
-                    color = 'red'
-                else:
-                    color = 'green'
-                width = edge_size if col & 1 else vertex_size
-                height = edge_size if row & 1 else vertex_size
-                pygame.draw.rect(screen, color, pygame.Rect(col + col_offset, row + row_offset, width, height))
-            col_offset += edge_size if col & 1 else vertex_size
-        row_offset += edge_size if row & 1 else vertex_size
+                width = edge_size if is_vertical_wall else vertex_size
+                height = edge_size if is_horizontal_wall else vertex_size
+                pygame.draw.rect(screen, get_edge_color(curr), pygame.Rect(col + col_offset, row + row_offset, width, height))
+            col_offset += edge_size if is_vertical_wall else vertex_size
+        row_offset += edge_size if is_horizontal_wall else vertex_size
     pygame.display.update() # update the screen
 
 while running:

@@ -13,7 +13,7 @@ class DStar:
         self.g = {}
 
         # maybe change this to only a few vertices
-        for s in self.G.Vertices():
+        for s in self.G.GetVertices():
             self.rhs[s] = float('inf')
             self.g[s] = float('inf')
         
@@ -59,9 +59,9 @@ class DStar:
                 self.g[s] = self.rhs[s]
                 self.Remove(s)
 
-                for u in self.G.Adjacent(s):
+                for u in self.G.GetAdjacent(s):
                     if (u != self.G.goal):
-                        self.rhs[u] = min(self.rhs[u], self.G.Cost(u, s), + self.g[s])
+                        self.rhs[u] = min(self.rhs[u], self.G.GetCost(u, s), + self.g[s])
                         self.UpdateVertex(u)
             elif (k_old < k_new):
                 self.Remove(s)
@@ -71,9 +71,9 @@ class DStar:
                 self.g[s] = float('inf')
                 
                 # the local neighborhood— everything around the vertex, including itself
-                s_and_adjacents = [s] + self.G.Adjacent(s)
+                s_and_adjacents = [s] + self.G.GetAdjacent(s)
                 for u in s_and_adjacents:
-                    if (self.rhs[u] == self.G.Cost(u, s) + g_old):
+                    if (self.rhs[u] == self.G.GetCost(u, s) + g_old):
                         if (u != self.G.goal):
-                            self.rhs[u] = min([self.G.Cost(u, u_adj) + self.g[u_adj] for u_adj in self.G.Adjacent(u)])
+                            self.rhs[u] = min([self.G.GetCost(u, u_adj) + self.g[u_adj] for u_adj in self.G.GetAdjacent(u)])
                     self.UpdateVertex(u)

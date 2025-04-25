@@ -10,7 +10,7 @@ class Graph:
     # S = G.vertices
     # Current vertex = s
     # Cost of path between vertices = c(v1, v2). Infinity cost represents path to wall.
-    # List of predecessor and successor vertices = G.Adjacent(s)
+    # List of predecessor and successor vertices = G.GetAdjacent(s)
     # Start/Amongus/Sussy/Baka = g.start
     # End/Vent = g.end
     # Estimated cost from start to current = g(s)
@@ -19,8 +19,8 @@ class Graph:
 
     # constants for differentiating spots on the maze 
     # (all positive value so they print nicely)
-    EMPTY_OR_EDGE = 0
-    ENDPOINT = 1 # (start or goal vertices)
+    EMPTY_OR_EDGE = 0 # (normal vertex or no wall)
+    ENDPOINT = 1 # (start or goal vertex)
     NEW_EDGE = 2 # (newly removed wall)
     NO_EDGE = 3 # (wall)
     REMOVED_EDGE = 4 # (newly added wall)
@@ -29,15 +29,15 @@ class Graph:
     # precondition: n > 1
     def __init__(self, n : int, allow_diagonal_movement : bool):
         self.old_n = n 
-        self.n = self.old_n + self.old_n - 1
+        self.n = self.old_n + self.old_n - 1 # even the maze isn't safe from inflation
         self.allow_diagonal_movement = allow_diagonal_movement
         self.maze = []
         # place walls at odd indices
         for row in range(self.n):
-            if row & 1:
+            if self.IsHorizontalWall(row):
                 self.maze.append([self.NO_EDGE] * self.n)
             else:
-                self.maze.append([self.NO_EDGE if col & 1 else self.EMPTY_OR_EDGE for col in range(self.n)])
+                self.maze.append([self.NO_EDGE if self.IsVerticalWall(col) else self.EMPTY_OR_EDGE for col in range(self.n)])
         # seed random number generator
         r.seed()
         # vertices are only at even indices
@@ -48,10 +48,10 @@ class Graph:
         # mark start and end
         self.maze[self.start[0]][self.start[1]] = self.ENDPOINT
         self.maze[self.goal[0]][self.goal[1]] = self.ENDPOINT
-        # knock down walls until the graph is connected
-        visited = [[False] * self.n for _ in range(self.n)] 
         # (cheekily) increase the recursion limit to allow for larger maze generation
         sys.setrecursionlimit(10000) 
+        # knock down walls until the graph is connected
+        visited = [[False] * self.n for _ in range(self.n)] 
         self.GenerateWalls(self.start, visited)
 
     # returns string representation of maze
@@ -62,7 +62,7 @@ class Graph:
     # tries to remove walls near self.start by adding the edges that it returns
     def AddEdges(self) -> List[Tuple[int, int]]:
         # 9 because that is the size of the smallest maze being generated (2x2)
-        new_edges = self.UpToKSomeWhatCloseEdges(5, edge_exists=False)
+        new_edges = self.UpToKSomeWhatCloseEdges(5, select_existing_edges=False)
         # remove walls 
         for e in new_edges:
             self.maze[e[0]][e[1]] = self.NEW_EDGE
@@ -72,7 +72,7 @@ class Graph:
     def RemoveEdges(self) -> List[Tuple[int, int]]:
         removed_edges = []
         # 9 because that is the size of the smallest maze being generated (2x2)
-        for e in self.UpToKSomeWhatCloseEdges(5, edge_exists=True):
+        for e in self.UpToKSomeWhatCloseEdges(5, select_existing_edges=True):
             prev_value = self.maze[e[0]][e[1]]
             # try removing edge
             self.maze[e[0]][e[1]] = self.REMOVED_EDGE
@@ -85,7 +85,7 @@ class Graph:
         return removed_edges
     
     # returns up to k edges around self.start that may or may not exist
-    def UpToKSomeWhatCloseEdges(self, k : int, edge_exists : bool) -> List[Tuple[int, int]]:
+    def UpToKSomeWhatCloseEdges(self, k : int, select_existing_edges : bool) -> List[Tuple[int, int]]:
         edges = []
         # gather edges from a window surrounding self.start
         half_window_size = self.n // 2
@@ -94,14 +94,14 @@ class Graph:
         for row in range(row_lo, row_hi):
             for col in range(col_lo, col_hi):
                 # skip vertices
-                if not ((row & 1) + (col & 1)): 
+                if not self.IsEdge((row, col)): 
                     continue
                 # disregard diagonal edges if diagonal movement is disallowed
-                if not self.allow_diagonal_movement and not ((row & 1) ^ (col & 1)):
+                if not self.allow_diagonal_movement and self.IsDiagonalEdge((row, col)):
                     continue
                 # at one time, consider only either edges that do not exist (i.e. walls), or edges that do exist
-                if ((self.maze[row][col] == self.NO_EDGE or self.maze[row][col] == self.REMOVED_EDGE) and not edge_exists) or \
-                ((self.maze[row][col] == self.EMPTY_OR_EDGE or self.maze[row][col] == self.NEW_EDGE) and edge_exists):
+                edge_exists = self.EdgeExists((row, col))
+                if (not edge_exists and not select_existing_edges) or (edge_exists and select_existing_edges):
                     edges.append((row, col))
         # randomize the result
         r.shuffle(edges)
@@ -123,11 +123,9 @@ class Graph:
         while q:
             s = q.popleft()
             # consider the adjacent vertices
-            for u in self.Adjacent(s):
-                e = self.Edge(s, u)
+            for u in self.GetAdjacent(s):
                 # disregard visited or unreachable vertices
-                if parent[u[0]][u[1]] != (-1, -1) or self.maze[e[0]][e[1]] == self.NO_EDGE or \
-                    self.maze[e[0]][e[1]] == self.REMOVED_EDGE:
+                if parent[u[0]][u[1]] != (-1, -1) or not self.EdgeExists(self.GetEdge(s, u)):
                     continue 
                 # add unprocessed vertices to the fringe and set their parent
                 else:
@@ -152,27 +150,43 @@ class Graph:
         self.maze[self.start[0]][self.start[1]] = self.ENDPOINT
 
     # returns the edge the two adjacent vertices
-    def Edge(self, s : Tuple[int, int], u : Tuple[int, int]) -> Tuple[int, int]:
+    def GetEdge(self, s : Tuple[int, int], u : Tuple[int, int]) -> Tuple[int, int]:
         return ((s[0] + u[0]) // 2, (s[1] + u[1]) // 2)
+    
+    # determines if the given coordinate is an edge
+    def IsEdge(self, e : Tuple[int, int]) -> bool:
+        return (e[0] & 1) or (e[1] & 1)
+
+    # determines if the given coordinate is a diagonal edge
+    def IsDiagonalEdge(self, e : Tuple[int, int]) -> bool:
+        return (e[0] & 1) and (e[1] & 1)
+    
+    # determines if there is a horizontal wall at row 
+    def IsHorizontalWall(self, row : int) -> bool:
+        return True if row & 1 else False
+    
+    # determines if there is a vertical wall at col
+    def IsVerticalWall(self, col : int) -> bool:
+        return True if col & 1 else False
 
     # does DFS to remove walls until the graph is connected
     def GenerateWalls(self, s : Tuple[int, int], visited : List[List[bool]]) -> None:
         # mark current as visited
         visited[s[0]][s[1]] = True 
         # consider adjacent vertices in random order
-        adjacent = self.Adjacent(s)
+        adjacent = self.GetAdjacent(s)
         r.shuffle(adjacent)
         for u in adjacent:
             # skip visited adjacent vertices
             if visited[u[0]][u[1]]:
                 continue
             # remove wall (add edge) if not visited
-            e = self.Edge(s, u)
+            e = self.GetEdge(s, u)
             self.maze[e[0]][e[1]] = self.EMPTY_OR_EDGE
             # continue DFS
             self.GenerateWalls(u, visited)
     
-    def Vertices(self) -> List[Tuple[int, int]]:
+    def GetVertices(self) -> List[Tuple[int, int]]:
         vertices = []
         # only include even indices
         for i in range(0, self.n, 2):
@@ -181,7 +195,7 @@ class Graph:
         return vertices
 
     # returns a list of all the valid adjacent vertices
-    def Adjacent(self, s : Tuple[int, int]) -> List[Tuple[int, int]]:
+    def GetAdjacent(self, s : Tuple[int, int]) -> List[Tuple[int, int]]:
         adjacent = []
         # consider up to 4 adjacent vertices by default
         choices = [(-2, 0), (0, -2), (2, 0), (0, 2)]
@@ -194,12 +208,17 @@ class Graph:
             if u[0] >= 0 and u[0] < self.n and u[1] >= 0 and u[1] < self.n:
                 adjacent.append(u)
         return adjacent
+    
+    # tells whether the edge exists 
+    # precondition: e[0] >= 0 and e[0] < self.n and e[1] >= 0 and e[1] < self.n:
+    def EdgeExists(self, e : Tuple[int, int]) -> bool:
+        return self.maze[e[0]][e[1]] == self.EMPTY_OR_EDGE or \
+            self.maze[e[0]][e[1]] == self.NEW_EDGE
 
     # returns the edge cost between s and u
-    def Cost(self, s : Tuple[int, int], u : Tuple[int, int]) -> float:
-        e = self.Edge(s, u)
+    def GetCost(self, s : Tuple[int, int], u : Tuple[int, int]) -> float:
         # there is a wall between s and u (no edge between them)
-        if self.maze[e[0]][e[1]] == self.NO_EDGE or self.maze[e[0]][e[1]] == self.REMOVED_EDGE:
+        if self.EdgeExists(self.GetEdge(s, u)):
             return float('inf')
         # same vertex
         elif s == u:
