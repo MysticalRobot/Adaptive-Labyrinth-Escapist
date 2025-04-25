@@ -4,16 +4,14 @@ from graph import Graph
 from typing import Tuple
     
 class DStar:
-
-    # Let us be schizophrenic
-    # Graph = G
+    # G = Graph
     # S = G.GetVertices()
-    # Current vertex = s
-    # Cost of path between vertices = G.Cost(v1, v2). Infinity cost represents no edge/wall.
-    # List of predecessor and successor vertices = G.GetAdjacent(s)
-    # Start/Amongus/Sussy/Baka = G.start
-    # End/Vent = G.end
-    # Estimated cost from start to current = g(s)
+    # s = Current vertex
+    # G.Cost(v1, v2) = Cost of path between vertices. ∞ cost represents no edge/wall.
+    # G.GetAdjacent(s) = List of current vertex's predecessor and successor vertices
+    # G.start = Start/AmongUs/SussyBaka
+    # G.end = End/Vent/Imposter
+    # g(s) = Estimated cost from start to current vertex
 
     # procedure Initialize()
     def __init__(self, G : Graph):

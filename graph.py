@@ -16,7 +16,7 @@ class Graph:
     # n = number of rows and columns (nxn maze)
     # precondition: n > 1
     def __init__(self, n : int, allow_diagonal_movement : bool):
-        self.old_n = n 
+        self.old_n = n
         self.n = self.old_n + self.old_n - 1 # even the maze isn't safe from inflation
         self.allow_diagonal_movement = allow_diagonal_movement
         self.maze = []
@@ -49,7 +49,6 @@ class Graph:
 
     # tries to remove walls near self.start by adding the edges that it returns
     def AddEdges(self) -> List[Tuple[int, int]]:
-        # 9 because that is the size of the smallest maze being generated (2x2)
         new_edges = self.UpToKSomeWhatCloseEdges(5, select_existing_edges=False)
         # remove walls 
         for e in new_edges:
@@ -59,7 +58,6 @@ class Graph:
     # tries to add walls near self.start by removing the edges that it returns
     def RemoveEdges(self) -> List[Tuple[int, int]]:
         removed_edges = []
-        # 9 because that is the size of the smallest maze being generated (2x2)
         for e in self.UpToKSomeWhatCloseEdges(5, select_existing_edges=True):
             prev_value = self.maze[e[0]][e[1]]
             # try removing edge
@@ -137,7 +135,7 @@ class Graph:
         self.start = new_start
         self.maze[self.start[0]][self.start[1]] = self.ENDPOINT
 
-    # returns the edge the two adjacent vertices
+    # returns the edge between two adjacent vertices
     def GetEdge(self, s : Tuple[int, int], u : Tuple[int, int]) -> Tuple[int, int]:
         return ((s[0] + u[0]) // 2, (s[1] + u[1]) // 2)
     
@@ -197,6 +195,15 @@ class Graph:
                 adjacent.append(u)
         return adjacent
     
+    def GetTraversableAdjacent(self, s : Tuple[int, int]) -> List[Tuple[int, int]]:
+        traversable_adjacent = []
+        # loop through the current vertex's adjacents
+        for adjacent in self.GetAdjacent(s):
+            # check if an edge exists
+            if (self.EdgeExists(self.GetEdge(s, adjacent))):
+                traversable_adjacent.append(adjacent)
+        return traversable_adjacent
+
     # tells whether the edge exists 
     # precondition: e[0] >= 0 and e[0] < self.n and e[1] >= 0 and e[1] < self.n:
     def EdgeExists(self, e : Tuple[int, int]) -> bool:
@@ -206,7 +213,7 @@ class Graph:
     # returns the edge cost between s and u
     def GetCost(self, s : Tuple[int, int], u : Tuple[int, int]) -> float:
         # there is a wall between s and u (no edge between them)
-        if self.EdgeExists(self.GetEdge(s, u)):
+        if not self.EdgeExists(self.GetEdge(s, u)):
             return float('inf')
         # same vertex
         elif s == u:

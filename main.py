@@ -17,10 +17,11 @@ while (G.start != G.goal):
         break
     # pick the successor s' that minimizes c(s, s') + g(s')
     val, min_s = float('inf'), None
-    for s in G.GetAdjacent(G.start):
+    for s in G.GetTraversableAdjacent(G.start):
         curr_val = G.GetCost(G.start, s) + dstar.g[s] 
         if curr_val <= val:
             val, min_s = curr_val, s
     # TODO min_s is sometimes None, but there should be at least 1 successor 
     G.MoveStart(min_s)
+    print()
     print(G)
