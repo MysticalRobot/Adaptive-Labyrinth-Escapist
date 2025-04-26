@@ -3,7 +3,7 @@ from graph import Graph
 from dstar import DStar
 
 # initialize a graph (and generate a maze)
-G = Graph(n=25, allow_diagonal_movement=False)
+G = Graph(n=10, allow_diagonal_movement=True)
 facing_right = True
 
 # load the images
