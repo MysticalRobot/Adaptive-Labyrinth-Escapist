@@ -178,6 +178,20 @@ class Graph:
     # determines if there is a vertical wall at col
     def IsVerticalWall(self, col : int) -> bool:
         return True if col & 1 else False
+    
+    # returns the vertices that are connected by the given edge
+    def GetVerticesConnectedByEdge(self, e : Tuple[int, int]) -> List[Tuple[int, int]]:
+        vertices = []
+        if self.IsDiagonalEdge(e):
+            choices = [(e[0] - 1, e[1] -1), (e[0] + 1, e[1] -1), (e[0] - 1, e[1] + 1), (e[0] + 1, e[1] + 1)]
+        elif self.IsHorizontalWall(e[0]):
+            choices = [(e[0] - 1, e[1]), (e[0] + 1, e[1])]
+        else: # self.IsVerticalWall(e[1])
+            choices = [(e[0], e[1] - 1), (e[0], e[1] + 1)]
+        for s in choices: 
+            if self.HasValidIndices(s):
+                vertices.append(s)
+        return vertices
 
     # does DFS to remove walls until the graph is connected
     def GenerateWalls(self, s : Tuple[int, int], visited : List[List[bool]]) -> None:
@@ -215,10 +229,14 @@ class Graph:
         for i, j in choices:
             u = (s[0] + i, s[1] + j) 
             # ensure index validity
-            if u[0] >= 0 and u[0] < self.n and u[1] >= 0 and u[1] < self.n:
+            if self.HasValidIndices(u):
                 adjacent.append(u)
         return adjacent
     
+    # returns true if the indices of the given point fit on the maze
+    def HasValidIndices(self, point : Tuple[int, int]) -> bool:
+        return point[0] >= 0 and point[0] < self.n and point[1] >= 0 and point[1] < self.n
+
     def GetTraversableAdjacent(self, s : Tuple[int, int]) -> List[Tuple[int, int]]:
         traversable_adjacent = []
         # loop through the current vertex's adjacents

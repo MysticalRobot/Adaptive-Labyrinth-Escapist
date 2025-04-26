@@ -3,7 +3,7 @@ from graph import Graph
 from dstar import DStar
 
 # initialize a graph (and generate a maze)
-G = Graph(n=10, allow_diagonal_movement=True)
+G = Graph(n=10, allow_diagonal_movement=False)
 facing_right = True
 
 # load the images
@@ -67,26 +67,47 @@ def draw_maze() -> None:
         row_offset += edge_size if is_horizontal_wall else vertex_size
     pygame.display.update() # update the screen
 
-# compute path to end using bfs
-path = G.FindPath()
+dstar = DStar(G)
+last = G.start
+dstar.ComputeShortestPath()
+moved_are_allowed = True
 
 while running:
     for event in pygame.event.get():
         # stop when user has x'd out the window
         if event.type == pygame.QUIT: 
             running = False
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN and moved_are_allowed:
             # add edges and recompute path
             if event.key == pygame.K_a:
-                G.AddEdges()
-                path = G.FindPath()
+                changed_edges = G.AddEdges()
+                dstar.k_m = dstar.k_m + dstar.heuristic(last, G.start)
+                last = G.start
+                for e in changed_edges:
+                    for s in G.GetVerticesConnectedByEdge(e):
+                        dstar.UpdateVertex(s)
+                dstar.ComputeShortestPath()
             # remove edges and recompute path
             if event.key == pygame.K_d:
-                G.RemoveEdges()
-                path = G.FindPath()
+                changed_edges = G.RemoveEdges()
+                dstar.k_m = dstar.k_m + dstar.heuristic(last, G.start)
+                last = G.start
+                for e in changed_edges:
+                    for s in G.GetVerticesConnectedByEdge(e):
+                        dstar.UpdateVertex(s)
+                dstar.ComputeShortestPath()
             # move amongus
-            if event.key == pygame.K_w and path:
-                G.MoveStart(path.pop())
+            if event.key == pygame.K_w:
+                # pick the successor s' that minimizes c(s, s') + g(s')
+                val, min_s = float('inf'), None
+                # maybe use G.GetTraversableAdjacent
+                for s in G.GetAdjacent(G.start):
+                    curr_val = G.GetCost(G.start, s) + dstar.g[s] 
+                    if curr_val <= val:
+                        val, min_s = curr_val, s
+                G.MoveStart(min_s)
+                if G.start == G.goal:
+                    moved_are_allowed = False
 
     draw_maze()
     clock.tick(60) # cap at 60 fps

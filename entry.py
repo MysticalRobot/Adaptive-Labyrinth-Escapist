@@ -18,18 +18,18 @@ class Key:
         return str(self)
 
 class Entry:
-    def __init__(self, s, k : Key):
+    def __init__(self, s, key : Key):
         self.s = s
-        self.k = k
+        self.key = key
 
     def __lt__(self, other):
-        self.k < other.k
+        self.key < other.key
 
     def __eq__(self, other):
         return self.s == other.s
     
     def __str__(self):
-        return f'[{self.s}, {self.k}]'
+        return f'[{self.s}, {self.key}]'
     
     def __repr__(self):
         return str(self)
