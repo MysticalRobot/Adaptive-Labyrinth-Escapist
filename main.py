@@ -12,9 +12,11 @@ dstar = DStar(G)
 print(G)
 dstar.ComputeShortestPath()
 while (G.start != G.goal):
+    ''' bug here: this causes the algorithm to terminate even when there is a path
     # no known path
     if dstar.rhs[G.start] == float('inf'):
         break
+    '''
     # pick the successor s' that minimizes c(s, s') + g(s')
     val, min_s = float('inf'), None
     for s in G.GetTraversableAdjacent(G.start):
