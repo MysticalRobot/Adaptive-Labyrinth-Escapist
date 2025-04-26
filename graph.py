@@ -63,7 +63,7 @@ class Graph:
             # try removing edge
             self.maze[e[0]][e[1]] = self.REMOVED_EDGE
             # if removing it disconnected the endpoints, restore the edge
-            if not self.FindPath()[0]:
+            if not self.PathExists():
                 self.maze[e[0]][e[1]] = prev_value
             # otherwise, keep it removed
             else:
@@ -93,19 +93,45 @@ class Graph:
         r.shuffle(edges)
         return edges[:min(k, len(edges))]
 
-    # returns a bool indicating whether a path from the start to the goal was found and the path itself
-    # finds the path using BFS
-    def FindPath(self) -> Tuple[bool, List[Tuple[int, int]]]:
+    # returns a bool indicating whether a path between the start and goal exists via an iterative DFS
+    def PathExists(self) -> bool:
+        # consider edge case (common with small mazes)
+        if self.start == self.goal:
+            return True
+        # track visited vertices
+        visited = [[False] * self.n for _ in range(self.n)] 
+        visited[self.start[0]][self.start[1]] = True
+        # fringe stored with queue
+        stack = [self.start]
+        while stack:
+            s = stack.pop()
+            # consider the reachable adjacent vertices
+            for u in self.GetTraversableAdjacent(s):
+                # disregard visited vertices
+                if visited[u[0]][u[1]]:
+                    continue 
+                # no need to look further if the goal has been reached
+                elif u == self.goal:
+                    return True
+                # add unprocessed vertices to the fringe and set their parent
+                else:
+                    stack.append(u)
+                    visited[u[0]][u[1]] = True
+        # the goal was never reached
+        return False
+    
+    # returns the shortest path from the goal to the start vertex via a BFS
+    def FindPath(self) -> List[Tuple[int, int]]:
         path = []
         # consider edge case (common with small mazes)
         if self.start == self.goal:
-            return (True, path) 
+            return path
         # track visited vertices
         parent = [[(-1, -1)] * self.n for _ in range(self.n)] 
         # set the parent tree's root to be its own parent
-        parent[self.goal[0]][self.goal[1]] = self.goal
+        parent[self.start[0]][self.start[1]] = self.start
         # fringe stored with queue
-        q = deque([self.goal])
+        q = deque([self.start])
         while q:
             s = q.popleft()
             # consider the adjacent vertices
@@ -118,16 +144,14 @@ class Graph:
                     q.append(u)
                     parent[u[0]][u[1]] = s
         # no path was found
-        if parent[self.start[0]][self.start[1]] == (-1, -1):
-            return (False, path)
+        if parent[self.goal[0]][self.goal[1]] == (-1, -1):
+            return path
         # reconstruct path from parent tree
-        s = parent[self.start[0]][self.start[1]]
-        while True:
+        s = self.goal
+        while parent[s[0]][s[1]] != s:
             path.append(s)
-            if parent[s[0]][s[1]] == s:
-                break 
             s = parent[s[0]][s[1]] 
-        return (True, path)
+        return path
     
     # moves the start to the provided location
     def MoveStart(self, new_start : Tuple[int, int]) -> None:

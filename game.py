@@ -3,7 +3,7 @@ from graph import Graph
 from dstar import DStar
 
 # initialize a graph (and generate a maze)
-G = Graph(n=10, allow_diagonal_movement=True)
+G = Graph(n=25, allow_diagonal_movement=False)
 facing_right = True
 
 # load the images
@@ -58,7 +58,7 @@ def draw_maze() -> None:
                 if (row, col) == G.start:
                     amongus = amongus_right if facing_right else amongus_left
                     screen.blit(amongus, (G.start[1] + col_offset, G.start[0] + row_offset))
-            # draw og walls black, and newly added walls red, and removed walls green
+            # draw og walls black, newly added walls red, and removed walls green
             elif curr != G.EMPTY_OR_EDGE:
                 width = edge_size if is_vertical_wall else vertex_size
                 height = edge_size if is_horizontal_wall else vertex_size
@@ -67,17 +67,27 @@ def draw_maze() -> None:
         row_offset += edge_size if is_horizontal_wall else vertex_size
     pygame.display.update() # update the screen
 
+# compute path to end using bfs
+path = G.FindPath()
+
 while running:
     for event in pygame.event.get():
         # stop when user has x'd out the window
         if event.type == pygame.QUIT: 
             running = False
-        # add or remove some edges when requested by user
         if event.type == pygame.KEYDOWN:
+            # add edges and recompute path
             if event.key == pygame.K_a:
                 G.AddEdges()
+                path = G.FindPath()
+            # remove edges and recompute path
             if event.key == pygame.K_d:
                 G.RemoveEdges()
+                path = G.FindPath()
+            # move amongus
+            if event.key == pygame.K_w and path:
+                G.MoveStart(path.pop())
+
     draw_maze()
     clock.tick(60) # cap at 60 fps
 pygame.quit()
