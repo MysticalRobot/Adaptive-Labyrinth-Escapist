@@ -1,5 +1,5 @@
 import sys
-import random as r
+import random
 from collections import deque
 from typing import Tuple, List
 
@@ -15,37 +15,52 @@ class Graph:
 
     # n = number of rows and columns (nxn maze)
     # precondition: n > 1
-    def __init__(self, n : int, allow_diagonal_movement : bool):
-        self.old_n = n
-        self.n = self.old_n + self.old_n - 1 # even the maze isn't safe from inflation
-        self.allow_diagonal_movement = allow_diagonal_movement
-        self.maze = []
-        # place walls at odd indices
-        for row in range(self.n):
-            if self.IsHorizontalWall(row):
-                self.maze.append([self.NO_EDGE] * self.n)
-            else:
-                self.maze.append([self.NO_EDGE if self.IsVerticalWall(col) else self.EMPTY_OR_EDGE for col in range(self.n)])
+    def __init__(self, n : int=2, allow_diagonal_movement : bool=False, maze_to_recreate : str='', random_seed : int=21):
         # seed random number generator
-        r.seed()
-        # vertices are only at even indices
-        vertex_indices = list(range(0, self.n, 2))
-        # generate start and goal vertices
-        self.start = (r.choice(vertex_indices), r.choice(vertex_indices))
-        self.goal = (r.choice(vertex_indices), r.choice(vertex_indices))
-        # mark start and end
-        self.maze[self.start[0]][self.start[1]] = self.ENDPOINT
-        self.maze[self.goal[0]][self.goal[1]] = self.ENDPOINT
-        # (cheekily) increase the recursion limit to allow for larger maze generation
-        sys.setrecursionlimit(10000) 
-        # knock down walls until the graph is connected
-        visited = [[False] * self.n for _ in range(self.n)] 
-        self.GenerateWalls(self.start, visited)
+        random.seed(random_seed)
+        # randomly generate maze
+        if not maze_to_recreate:
+            self.old_n = n
+            self.n = self.old_n + self.old_n - 1 # even the maze isn't safe from inflation
+            self.allow_diagonal_movement = allow_diagonal_movement
+            self.maze = []
+            # place walls at odd indices
+            for row in range(self.n):
+                if self.IsHorizontalWall(row):
+                    self.maze.append([self.NO_EDGE] * self.n)
+                else:
+                    self.maze.append([self.NO_EDGE if self.IsVerticalWall(col) else self.EMPTY_OR_EDGE for col in range(self.n)])
+            # vertices are only at even indices
+            vertex_indices = list(range(0, self.n, 2))
+            # generate start and goal vertices
+            self.start = (random.choice(vertex_indices), random.choice(vertex_indices))
+            self.goal = (random.choice(vertex_indices), random.choice(vertex_indices))
+            # mark start and end
+            self.maze[self.start[0]][self.start[1]] = self.ENDPOINT
+            self.maze[self.goal[0]][self.goal[1]] = self.ENDPOINT
+            # (cheekily) increase the recursion limit to allow for larger maze generation
+            sys.setrecursionlimit(10000) 
+            # knock down walls until the graph is connected
+            visited = [[False] * self.n for _ in range(self.n)] 
+            self.GenerateWalls(self.start, visited)
+        # recreate given maze
+        else:
+            with open(maze_to_recreate, 'r') as maze:
+                self.old_n = int(maze.readline())
+                self.n = int(maze.readline())
+                self.allow_diagonal_movement = bool(maze.readline())
+                self.start = tuple(int(index) for index in maze.readline().split())
+                self.goal = tuple(int(index) for index in maze.readline().split())
+                self.maze = [[int(val) for val in row.strip()] for row in maze.readlines()]
 
     # returns string representation of maze
     def __str__(self) -> str:
         rows = [''.join([str(s) for s in row]) for row in self.maze]
         return '\n'.join(rows)
+    
+    # return a string containing all the information needed to easily recreate a maze
+    def GetRecreationInfo(self) -> str:
+        return f'{self.old_n}\n{self.n}\n{self.allow_diagonal_movement}\n{self.start[0]} {self.start[1]}\n{self.goal[0]} {self.goal[1]}\n{self}'
 
     # tries to remove walls near self.start by adding the edges that it returns
     def AddEdges(self) -> List[Tuple[int, int]]:
@@ -90,7 +105,7 @@ class Graph:
                 if (not edge_exists and not select_existing_edges) or (edge_exists and select_existing_edges):
                     edges.append((row, col))
         # randomize the result
-        r.shuffle(edges)
+        random.shuffle(edges)
         return edges[:min(k, len(edges))]
 
     # returns a bool indicating whether a path between the start and goal exists via an iterative DFS
@@ -199,7 +214,7 @@ class Graph:
         visited[s[0]][s[1]] = True 
         # consider adjacent vertices in random order
         adjacent = self.GetAdjacent(s)
-        r.shuffle(adjacent)
+        random.shuffle(adjacent)
         for u in adjacent:
             # skip visited adjacent vertices
             if visited[u[0]][u[1]]:
@@ -210,6 +225,7 @@ class Graph:
             # continue DFS
             self.GenerateWalls(u, visited)
     
+    # returns a list of all the vertices in the graph
     def GetVertices(self) -> List[Tuple[int, int]]:
         vertices = []
         # only include even indices
@@ -217,7 +233,11 @@ class Graph:
             for j in range(0, self.n, 2):
                 vertices.append((i, j))
         return vertices
-
+    
+    # returns true if the indices of the given point fit on the maze
+    def HasValidIndices(self, point : Tuple[int, int]) -> bool:
+        return point[0] >= 0 and point[0] < self.n and point[1] >= 0 and point[1] < self.n
+    
     # returns a list of all the valid adjacent vertices
     def GetAdjacent(self, s : Tuple[int, int]) -> List[Tuple[int, int]]:
         adjacent = []
@@ -232,11 +252,8 @@ class Graph:
             if self.HasValidIndices(u):
                 adjacent.append(u)
         return adjacent
-    
-    # returns true if the indices of the given point fit on the maze
-    def HasValidIndices(self, point : Tuple[int, int]) -> bool:
-        return point[0] >= 0 and point[0] < self.n and point[1] >= 0 and point[1] < self.n
 
+    # returns adjacent vertices that are connected by an edge (i.e. traversable)
     def GetTraversableAdjacent(self, s : Tuple[int, int]) -> List[Tuple[int, int]]:
         traversable_adjacent = []
         # loop through the current vertex's adjacents

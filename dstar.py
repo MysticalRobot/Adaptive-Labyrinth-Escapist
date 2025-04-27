@@ -30,9 +30,14 @@ class DStar:
         self.rhs[self.G.goal] = 0
         self.InsertIntoU(self.G.goal, self.CalculateKey(self.G.goal))
     
-    # Our Hueristic: Manhattan Distance
+    # our Hueristic is based on whether diagonal movement is allowed
     def heuristic(self, u1 : Tuple[int, int], u2 : Tuple[int, int]) -> int:
-        return abs(u1[0] - u2[0]) + abs(u1[1] - u2[1])
+        # Chebyshev Distance
+        if self.G.allow_diagonal_movement:
+            return max(abs(u1[0] - u2[0]), abs(u1[1] - u2[1]))
+        # Manhattan Distance
+        else:
+            return abs(u1[0] - u2[0]) + abs(u1[1] - u2[1])
     
     # procedure CalculateKey(s)
     def CalculateKey(self, s : Tuple[int, int]) -> Key:
@@ -79,7 +84,7 @@ class DStar:
                     self.UpdateVertex(s)
             elif (self.g[u] > self.rhs[u]):
                 self.g[u] = self.rhs[u]
-                # maybe change to GetTraversableAdjacent(u)
+                # TODO maybe change to GetTraversableAdjacent(u)
                 for s in self.G.GetAdjacent(u):
                     self.UpdateVertex(s)
             else: # (k_old < k_new)
