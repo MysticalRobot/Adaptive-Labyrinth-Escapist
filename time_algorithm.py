@@ -3,6 +3,7 @@ import random
 import time
 from graph import Graph
 from dstar import DStar
+from bfs import BFS
 
 # seed random number generator
 random_seed = int(sys.argv[3])
@@ -21,7 +22,8 @@ if algorithm_name == 'dstar':
     algorithm = dstar
 elif algorithm_name == 'bfs':
     init_time = 0
-    algorithm = G
+    bfs = BFS(G)
+    algorithm = bfs
 # TODO handle additional algorithms here
 else:
     'zehahahaha mugiwara'

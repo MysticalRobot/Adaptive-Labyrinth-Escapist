@@ -1,10 +1,11 @@
 import heapq
 from entry import Entry, Key
 from graph import Graph
-from typing import List, Tuple
+from typing import Tuple, List
 from search_algorithm import SearchAlgorithm
     
 class DStar(SearchAlgorithm):
+    
     # G = Graph
     # S = G.GetVertices()
     # s = Current vertex

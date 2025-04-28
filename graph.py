@@ -1,10 +1,8 @@
 import sys
 import random
-from collections import deque
 from typing import Tuple, List, Optional
-from search_algorithm import SearchAlgorithm
 
-class Graph(SearchAlgorithm):
+class Graph():
     
     # constants for differentiating spots on the maze 
     # (all positive value so they print nicely)
@@ -45,7 +43,6 @@ class Graph(SearchAlgorithm):
             # knock down walls until the graph is connected
             visited = [[False] * self.n for _ in range(self.n)] 
             self.GenerateWalls(self.start, visited)
-            self.path = None
         # recreate given maze
         else:
             with open(maze_to_recreate, 'r') as maze:
@@ -55,7 +52,6 @@ class Graph(SearchAlgorithm):
                 self.start = tuple(int(index) for index in maze.readline().split())
                 self.goal = tuple(int(index) for index in maze.readline().split())
                 self.maze = [[int(val) for val in row.strip()] for row in maze.readlines()]
-                self.path = None
 
     # returns string representation of maze
     def __str__(self) -> str:
@@ -138,47 +134,6 @@ class Graph(SearchAlgorithm):
                     visited[u[0]][u[1]] = True
         # the goal was never reached
         return False
-    
-    # stores the shortest path from the goal to the start vertex via a BFS
-    def ComputeShortestPath(self) -> None:
-        self.path = []
-        # consider edge case (common with small mazes)
-        if self.start == self.goal:
-            return
-        # track visited vertices
-        parent = [[(-1, -1)] * self.n for _ in range(self.n)] 
-        # set the parent tree's root to be its own parent
-        parent[self.start[0]][self.start[1]] = self.start
-        # fringe stored with queue
-        q = deque([self.start])
-        while q:
-            s = q.popleft()
-            # consider the adjacent vertices
-            for u in self.GetAdjacent(s):
-                # disregard visited or unreachable vertices
-                if parent[u[0]][u[1]] != (-1, -1) or not self.EdgeExists(self.GetEdge(s, u)):
-                    continue 
-                # add unprocessed vertices to the fringe and set their parent
-                else:
-                    q.append(u)
-                    parent[u[0]][u[1]] = s
-        # no path was found
-        if parent[self.goal[0]][self.goal[1]] == (-1, -1):
-            return
-        # reconstruct path from parent tree
-        s = self.goal
-        while parent[s[0]][s[1]] != s:
-            self.path.append(s)
-            s = parent[s[0]][s[1]] 
-
-    # returns the next vertex along the path (from the start to the end)
-    def PickSuccessor(self) -> Tuple[int, int]:
-        # the path is generated in reverse, so the last one is the next one 
-        return self.path.pop()
-    
-    # computes the path from scratch
-    def AdaptToChanges(self, changed_edges : List[Tuple[int, int]]) -> None:
-        self.ComputeShortestPath()
     
     # moves the start to the provided location
     def MoveStart(self, new_start : Tuple[int, int]) -> None:

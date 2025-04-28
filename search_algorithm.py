@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import Tuple, List
 
 # defines the methods a search algorithm needs to implement
 class SearchAlgorithm(ABC):
