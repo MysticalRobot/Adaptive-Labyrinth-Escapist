@@ -1,9 +1,10 @@
 import heapq
 from entry import Entry, Key
 from graph import Graph
-from typing import Tuple
+from typing import List, Tuple
+from search_algorithm import SearchAlgorithm
     
-class DStar:
+class DStar(SearchAlgorithm):
     # G = Graph
     # S = G.GetVertices()
     # s = Current vertex
@@ -29,6 +30,8 @@ class DStar:
         
         self.rhs[self.G.goal] = 0
         self.InsertIntoU(self.G.goal, self.CalculateKey(self.G.goal))
+
+        self.last = self.G.start
     
     # our Hueristic is based on whether diagonal movement is allowed
     def heuristic(self, u1 : Tuple[int, int], u2 : Tuple[int, int]) -> int:
@@ -89,3 +92,21 @@ class DStar:
                     self.UpdateVertex(s)
             else: # (k_old < k_new)
                 self.InsertIntoU(u, k_new)
+
+    def PickSuccessor(self) -> Tuple[int, int]:
+        # pick the successor s' that minimizes c(s, s') + g(s')
+        val, min_s = float('inf'), None
+        # TODO maybe use G.GetTraversableAdjacent
+        for s in self.G.GetAdjacent(self.G.start):
+            curr_val = self.G.GetCost(self.G.start, s) + self.g[s] 
+            if curr_val <= val:
+                val, min_s = curr_val, s
+        return min_s
+    
+    def AdaptToChanges(self, changed_edges : List[Tuple[int, int]]) -> Tuple[int, int]:
+        self.k_m = self.k_m + self.heuristic(self.last, self.G.start)
+        self.last = self.G.start
+        for e in changed_edges:
+            for s in self.G.GetVerticesConnectedByEdge(e):
+                self.UpdateVertex(s)
+        self.ComputeShortestPath()

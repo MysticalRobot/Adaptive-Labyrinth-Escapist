@@ -2,8 +2,9 @@ import sys
 import random
 from collections import deque
 from typing import Tuple, List
+from search_algorithm import SearchAlgorithm
 
-class Graph:
+class Graph(SearchAlgorithm):
     
     # constants for differentiating spots on the maze 
     # (all positive value so they print nicely)
@@ -43,6 +44,7 @@ class Graph:
             # knock down walls until the graph is connected
             visited = [[False] * self.n for _ in range(self.n)] 
             self.GenerateWalls(self.start, visited)
+            self.path = None
         # recreate given maze
         else:
             with open(maze_to_recreate, 'r') as maze:
@@ -52,6 +54,7 @@ class Graph:
                 self.start = tuple(int(index) for index in maze.readline().split())
                 self.goal = tuple(int(index) for index in maze.readline().split())
                 self.maze = [[int(val) for val in row.strip()] for row in maze.readlines()]
+                self.path = None
 
     # returns string representation of maze
     def __str__(self) -> str:
@@ -135,12 +138,12 @@ class Graph:
         # the goal was never reached
         return False
     
-    # returns the shortest path from the goal to the start vertex via a BFS
-    def FindPath(self) -> List[Tuple[int, int]]:
-        path = []
+    # stores the shortest path from the goal to the start vertex via a BFS
+    def ComputeShortestPath(self) -> None:
+        self.path = []
         # consider edge case (common with small mazes)
         if self.start == self.goal:
-            return path
+            return
         # track visited vertices
         parent = [[(-1, -1)] * self.n for _ in range(self.n)] 
         # set the parent tree's root to be its own parent
@@ -160,13 +163,21 @@ class Graph:
                     parent[u[0]][u[1]] = s
         # no path was found
         if parent[self.goal[0]][self.goal[1]] == (-1, -1):
-            return path
+            return
         # reconstruct path from parent tree
         s = self.goal
         while parent[s[0]][s[1]] != s:
-            path.append(s)
+            self.path.append(s)
             s = parent[s[0]][s[1]] 
-        return path
+
+    # returns the next vertex along the path (from the start to the end)
+    def PickSuccessor(self) -> Tuple[int, int]:
+        # the path is generated in reverse, so the last one is the next one 
+        return self.path.pop()
+    
+    # computes the path from scratch
+    def AdaptToChanges(self, changed_edges : List[Tuple[int, int]]) -> None:
+        self.ComputeShortestPath()
     
     # moves the start to the provided location
     def MoveStart(self, new_start : Tuple[int, int]) -> None:
