@@ -1,4 +1,5 @@
-algorithm,n (maze size),diagonal movement allowed,m (steps before change in maze),time (ns),path lengthdstar,10,True,5,635000,2
+algorithm,n (maze size),diagonal movement allowed,m (steps before change in maze),time (ns),path length
+dstar,10,True,5,635000,2
 dstar,10,True,5,900000,2
 dstar,10,True,5,631000,2
 dstar,10,True,5,631000,2

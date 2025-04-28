@@ -11,6 +11,9 @@ class Key:
         else:
             return False
         
+    def __eq__(self, other):
+        return self.k1 == other.k1 and self.k2 == other.k2
+        
     def __str__(self):
         return f'({self.k1}, {self.k2})'
     

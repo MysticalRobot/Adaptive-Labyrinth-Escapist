@@ -1,9 +1,11 @@
 import pygame
 from graph import Graph
 from dstar import DStar
+from bfs import BFS
+from lpastar import LifelongPlanningAStar
 
 # initialize a graph (and generate a maze)
-G = Graph(n=10, allow_diagonal_movement=False)
+G = Graph(n=10, allow_diagonal_movement=True)
 
 # load the images
 amongus_left = pygame.image.load("amongus_left.png")
@@ -21,9 +23,18 @@ amongus_left = pygame.transform.scale(amongus_left, (vertex_size, vertex_size))
 amongus_right = pygame.transform.scale(amongus_right, (vertex_size, vertex_size))
 vent = pygame.transform.scale(vent, (vertex_size, vertex_size))
 
-# initialize dstar
-dstar = DStar(G)
-dstar.ComputeShortestPath()
+# decide on algorithm
+algorithm_name = 'dstar'
+if algorithm_name == 'dstar':
+    algorithm = DStar(G)
+elif algorithm_name == 'lpastar':
+    algorithm = LifelongPlanningAStar(G)
+elif algorithm_name == 'bfs':
+    algorithm = BFS(G)
+# TODO handle additional algorithms here
+else:
+    'zehahahaha mugiwara'
+algorithm.ComputeShortestPath() 
 
 # initialize pygame
 pygame.init()
@@ -80,13 +91,13 @@ while running:
         if event.type == pygame.KEYDOWN and moved_are_allowed:
             # add edges and recompute path
             if event.key == pygame.K_a:
-                dstar.AdaptToChanges(G.AddEdges())
+                algorithm.AdaptToChanges(G.AddEdges())
             # remove edges and recompute path
             if event.key == pygame.K_d:
-                dstar.AdaptToChanges(G.RemoveEdges())
+                algorithm.AdaptToChanges(G.RemoveEdges())
             # move amongus
             if event.key == pygame.K_w:
-                new_start = dstar.PickSuccessor()
+                new_start = algorithm.PickSuccessor()
                 # change orientation of amongus based on move
                 if new_start[1] < G.start[1]:
                     facing_right = False

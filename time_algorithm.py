@@ -20,6 +20,12 @@ if algorithm_name == 'dstar':
     end = time.time_ns()
     init_time = end - start
     algorithm = dstar
+elif algorithm_name == 'lpastar':
+    start = time.time_ns()
+    lpastar = LifelongPlanningAStar(G)
+    end = time.time_ns()
+    init_time = end - start
+    algorithm = lpastar
 elif algorithm_name == 'bfs':
     init_time = 0
     bfs = BFS(G)
