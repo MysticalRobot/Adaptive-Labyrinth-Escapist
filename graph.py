@@ -1,7 +1,7 @@
 import sys
 import random
 from collections import deque
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from search_algorithm import SearchAlgorithm
 
 class Graph(SearchAlgorithm):
@@ -16,9 +16,10 @@ class Graph(SearchAlgorithm):
 
     # n = number of rows and columns (nxn maze)
     # precondition: n > 1
-    def __init__(self, n : int=2, allow_diagonal_movement : bool=False, maze_to_recreate : str='', random_seed : int=21):
+    def __init__(self, n : int=2, allow_diagonal_movement : bool=False, maze_to_recreate : str='', random_seed : Optional[int]=None):
         # seed random number generator
-        random.seed(random_seed)
+        if random_seed:
+            random.seed(random_seed)
         # randomly generate maze
         if not maze_to_recreate:
             self.old_n = n
