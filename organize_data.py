@@ -35,7 +35,7 @@ c = sorted(list(bfs_true_time_path.items()))
 d = sorted(list(bfs_false_time_path.items()))
 
 with open('organized_data.csv', 'w') as output:
-    output.write('n,dstar diag timing,dstar diag path length,dstar no diag timing,dstar no diag path length,bfs diag timing,bfs diag path length,bfs no diag timing,bfs no diag path length\n')
+    output.write('n,d* lite diag timing,d* lite diag length,d* lite no diag timing,d* lite no diag length,bfs diag timing,bfs diag length,bfs no diag timing,bfs no diag length\n')
     for row in zip(a, b, c, d):
         print(f'{row[0][0]},{avg(row[0][1][0])},{avg(row[0][1][1])},{avg(row[1][1][0])},{avg(row[1][1][1])},{avg(row[2][1][0])},{avg(row[2][1][1])},{avg(row[3][1][0])},{avg(row[3][1][1])}')
         output.write(f'{row[0][0]},{avg(row[0][1][0])},{avg(row[0][1][1])},{avg(row[1][1][0])},{avg(row[1][1][1])},{avg(row[2][1][0])},{avg(row[2][1][1])},{avg(row[3][1][0])},{avg(row[3][1][1])}\n')
