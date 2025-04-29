@@ -128,6 +128,10 @@ class LifelongPlanningAStar(SearchAlgorithm):
     
     def AdaptToChanges(self, changed_edges : List[Tuple[int, int]]) -> Tuple[int, int]:
         for e in changed_edges:
-            for s in self.G.GetVerticesConnectedByEdge(e):
-                self.UpdateVertex(s)
+            for s, u in self.G.GetVerticesConnectedByEdge(e):
+                for (a, b) in [(s, u), (u, s)]:
+                    if self.rhs[a] == self.G.GetCost(a, b) + self.g[b]:
+                        if a != self.G.goal:
+                            self.rhs[a] = min([float('inf')] + [self.G.GetCost(a, c) + self.g[c] for c in self.G.GetAdjacent(u)])
+                self.UpdateVertex(a)
         self.ComputeShortestPath()

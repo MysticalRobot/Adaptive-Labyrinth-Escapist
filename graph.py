@@ -163,17 +163,17 @@ class Graph():
     
     # returns the vertices that are connected by the given edge
     def GetVerticesConnectedByEdge(self, e : Tuple[int, int]) -> List[Tuple[int, int]]:
-        vertices = []
+        pairs_of_vertices = []
         if self.IsDiagonalEdge(e):
-            choices = [(e[0] - 1, e[1] -1), (e[0] + 1, e[1] -1), (e[0] - 1, e[1] + 1), (e[0] + 1, e[1] + 1)]
+            choices = [((e[0] - 1, e[1] -1), (e[0] + 1, e[1] + 1)), ((e[0] - 1, e[1] + 1), (e[0] + 1, e[1] -1))]
         elif self.IsHorizontalWall(e[0]):
-            choices = [(e[0] - 1, e[1]), (e[0] + 1, e[1])]
+            choices = [((e[0] - 1, e[1]), (e[0] + 1, e[1]))]
         else: # self.IsVerticalWall(e[1])
-            choices = [(e[0], e[1] - 1), (e[0], e[1] + 1)]
-        for s in choices: 
-            if self.HasValidIndices(s):
-                vertices.append(s)
-        return vertices
+            choices = [((e[0], e[1] - 1), (e[0], e[1] + 1))]
+        for s, u in choices: 
+            if self.HasValidIndices(s) and self.HasValidIndices(u):
+                pairs_of_vertices.append((s, u))
+        return pairs_of_vertices
 
     # does DFS to remove walls until the graph is connected
     def GenerateWalls(self, s : Tuple[int, int], visited : List[List[bool]]) -> None:
