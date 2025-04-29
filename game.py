@@ -17,6 +17,15 @@ amongus = pygame.transform.scale(pygame.image.load("assets/amongus.png"), (verte
 vent = pygame.transform.scale(pygame.image.load("assets/vent.png"), (vertex_size * 0.8, vertex_size * 0.5))
 venting_frames = [pygame.transform.scale(pygame.image.load(f'assets/venting_frame{i}.png'), (vertex_size, vertex_size)) for i in range(1, 6)]
 
+# initialize mixer for music
+pygame.mixer.init()
+background_music = pygame.mixer.Sound('assets/amongus_drip_song.mp3')
+background_music.set_volume(0.5)
+background_music.play(loops=-1)
+
+venting_sound = pygame.mixer.Sound('assets/venting_sound.mp3')
+venting_sound.set_volume(4)
+
 # initialize pygame
 pygame.init()
 dimension = (algorithm.G.old_n * vertex_size + (algorithm.G.old_n - 1) * edge_size) + algorithm.G.old_n * 2
@@ -54,19 +63,19 @@ def draw_maze() -> None:
                 if time_since_end_of_game is None:
                     # draw the goal (vent) before the start (amongus) to account for overlap
                     if (row, col) == algorithm.G.goal:
-                        screen.blit(vent, (x + vertex_size * 0.064, y + vertex_size * 0.049))
+                        screen.blit(vent, (x + vertex_size * 0.1, y + vertex_size * 0.5))
                     if (row, col) == algorithm.G.start:
-                        screen.blit(amongus, (x + vertex_size * 0.064, y + vertex_size * 0.025))
+                        screen.blit(amongus, (x + vertex_size * 0.1, y + vertex_size * 0.025))
                 else:
                     current_time = time.time_ns()
-                    if current_time < time_since_end_of_game + frame_time_length * 1:
+                    if current_time < time_since_end_of_game + frame_time_length * 5:
                         screen.blit(venting_frames[0], (x, y))
                     # second frame occurs three times in original gif
-                    elif current_time < time_since_end_of_game + frame_time_length * 4:
+                    elif current_time < time_since_end_of_game + frame_time_length * 8:
                         screen.blit(venting_frames[1], (x, y))
-                    elif current_time < time_since_end_of_game + frame_time_length * 5:
+                    elif current_time < time_since_end_of_game + frame_time_length * 9:
                         screen.blit(venting_frames[2], (x, y))
-                    elif current_time < time_since_end_of_game + frame_time_length * 6:
+                    elif current_time < time_since_end_of_game + frame_time_length * 10:
                         screen.blit(venting_frames[3], (x, y))
                     else:
                         screen.blit(venting_frames[4], (x, y))
@@ -103,6 +112,7 @@ while running:
                     amongus = pygame.transform.flip(amongus, True, False)
                 algorithm.G.MoveStart(new_start)
                 if algorithm.G.start == algorithm.G.goal:
+                    venting_sound.play()
                     time_since_end_of_game = time.time_ns()
                     # flip all the venting frames based on the final orientation
                     if not facing_right:
