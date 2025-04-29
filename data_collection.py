@@ -12,9 +12,9 @@ m = 5
 # for each algorithm and movement setting
 for algorithm in ['dstar', 'bfs']: # TODO add additional algorithm names here 
     for allow_diagonal_movement in [True, False]:
-        # try various graph sizes, 10 times each
-        for n in range(2, 103, 10):
-            for trial in range(0, 10):
+        # try various graph sizes, 5 times each
+        for n in range(2, 103, 5):
+            for trial in range(0, 5):
                 # TODO may have to change python3 to whatever works for your machine
                 # run implementation each (which will record its own time)
                 os.system(f'python3 time_algorithm.py {n} {allow_diagonal_movement} {random_seed} {m} {algorithm}')
