@@ -87,17 +87,18 @@ class DStar(SearchAlgorithm):
             u = top_entry.s
             k_old = top_entry.key
             k_new = self.CalculateKey(u)
-            if not (k_old < k_new):
-                self.g[u] = float('inf')
-                for s in self.G.GetAdjacent(u) + [u]:
-                    self.UpdateVertex(s)
-            elif (self.g[u] > self.rhs[u]):
+            if (self.g[u] > self.rhs[u]):
                 self.g[u] = self.rhs[u]
                 # TODO maybe change to GetTraversableAdjacent(u)
                 for s in self.G.GetAdjacent(u):
                     self.UpdateVertex(s)
-            else: # (k_old < k_new)
+            elif (k_old < k_new):
                 self.InsertIntoU(u, k_new)
+            else:
+                self.g[u] = float('inf')
+                self.UpdateVertex(u)
+                for s in self.G.GetAdjacent(u) + [u]:
+                    self.UpdateVertex(s)
 
     def PickSuccessor(self) -> Tuple[int, int]:
         # pick the successor s' that minimizes c(s, s') + g(s')
@@ -113,6 +114,10 @@ class DStar(SearchAlgorithm):
         self.k_m = self.k_m + self.heuristic(self.last, self.G.start)
         self.last = self.G.start
         for e in changed_edges:
-            for s in self.G.GetVerticesConnectedByEdge(e):
-                self.UpdateVertex(s)
+            for s, u in self.G.GetVerticesConnectedByEdge(e):
+                for (a, b) in [(s, u), (u, s)]:
+                    if self.rhs[a] == self.G.GetCost(a, b) + self.g[b]:
+                        if a != self.G.goal:
+                            self.rhs[a] = min([float('inf')] + [self.G.GetCost(a, c) + self.g[c] for c in self.G.GetAdjacent(a)])
+                    self.UpdateVertex(a)
         self.ComputeShortestPath()
