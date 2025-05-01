@@ -1,9 +1,9 @@
 To use this maze, you must remove the comments
-2 : old_n (number of vertices = old_n^2)
-3 : n (number of edges + number of vertices)
-False : allow_diagonal_movement
-0 2 : start (row, col)
-2 0 : end (row, col)
-031 : maze
+2 # old_n (number of vertices in row/col)
+3 # n (number of edges + number of vertices in row/col)
+False # allow_diagonal_movement
+0 2 # start (row, col)
+2 0 # end (row, col)
+031 # maze
 030
 100

@@ -3,7 +3,7 @@ import time
 from init_algorithm import initialize_algorithm
 
 # generate maze and initialize algorithm
-_, algorithm = initialize_algorithm(algorithm_name='dstar', n=10, allow_diagonal_movement=True)
+_, algorithm = initialize_algorithm(algorithm_name='d* lite', n=10, allow_diagonal_movement=True)
 algorithm.ComputeShortestPath() 
 
 random_ahh_number_chosen_after_trial_and_error = 575

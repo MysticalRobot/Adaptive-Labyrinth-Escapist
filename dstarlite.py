@@ -3,9 +3,8 @@ from entry import Entry, Key
 from graph import Graph
 from typing import Tuple, List
 from search_algorithm import SearchAlgorithm
-from unittest import TestCase as test
     
-class LifelongPlanningAStar(SearchAlgorithm):
+class DStarLite(SearchAlgorithm):
     
     # G = Graph
     # S = G.GetVertices()
@@ -21,6 +20,8 @@ class LifelongPlanningAStar(SearchAlgorithm):
         self.G = G
         # U = fringe
         self.U = []
+        # k_m accumulates heuristic
+        self.k_m = 0
         self.rhs = {}
         self.g = {}
 
@@ -28,8 +29,8 @@ class LifelongPlanningAStar(SearchAlgorithm):
             self.rhs[s] = float('inf')
             self.g[s] = float('inf')
         
-        self.rhs[self.G.start] = 0
-        self.InsertIntoU(self.G.start, self.CalculateKey(self.G.start))
+        self.rhs[self.G.goal] = 0
+        self.InsertIntoU(self.G.goal, self.CalculateKey(self.G.goal))
 
         self.last = self.G.start
     
@@ -48,7 +49,7 @@ class LifelongPlanningAStar(SearchAlgorithm):
     
     # procedure CalculateKey(s)
     def CalculateKey(self, s : Tuple[int, int]) -> Key:
-        return Key(min(self.g[s], self.rhs[s]) + self.heuristic(s, self.G.goal), min(self.g[s], self.rhs[s]))
+        return Key(min(self.g[s], self.rhs[s]) + self.heuristic(self.G.start, s) + self.k_m, min(self.g[s], self.rhs[s]))
     
     # checks if s is in U
     def UContains(self, s : Tuple[int, int]) -> bool: 
@@ -71,8 +72,8 @@ class LifelongPlanningAStar(SearchAlgorithm):
 
     # procedure UpdateVertex(u)
     def UpdateVertex(self, u : Tuple[int, int]) -> None:
-        if (u != self.G.start):
-            self.rhs[u] = min([self.G.GetCost(u, u_adjacent) + self.g[u_adjacent] for u_adjacent in self.G.GetAdjacent(u)])
+        if (u != self.G.goal):
+            self.rhs[u] = min([float('inf')] + [self.G.GetCost(u, u_adjacent) + self.g[u_adjacent] for u_adjacent in self.G.GetAdjacent(u)])
         if (self.UContains(u)):
             self.RemoveFromU(u)
         if (self.g[u] != self.rhs[u]):
@@ -80,41 +81,23 @@ class LifelongPlanningAStar(SearchAlgorithm):
 
     # procedure ComputeShortestPath()
     def ComputeShortestPath(self) -> None:
-        '''
-        vertex_expansion_count = {}
-        last_key = None
-        '''
-        while (self.U and self.U[0].key < self.CalculateKey(self.G.goal) or self.rhs[self.G.goal] != self.g[self.G.goal]):
+        while (self.U and self.U[0].key < self.CalculateKey(self.G.start) or self.rhs[self.G.start] != self.g[self.G.start]):
             top_entry = self.PopFromU()
             u = top_entry.s
-            k = top_entry.key
-            '''
-            if last_key:
-                test.assertTrue(expr=last_key < k)
-            last_key = k
-            '''
+            k_old = top_entry.key
+            k_new = self.CalculateKey(u)
             if (self.g[u] > self.rhs[u]):
                 self.g[u] = self.rhs[u]
                 # TODO maybe change to GetTraversableAdjacent(u)
                 for s in self.G.GetAdjacent(u):
                     self.UpdateVertex(s)
-            else: 
+            elif (k_old < k_new):
+                self.InsertIntoU(u, k_new)
+            else:
                 self.g[u] = float('inf')
+                self.UpdateVertex(u)
                 for s in self.G.GetAdjacent(u) + [u]:
                     self.UpdateVertex(s)
-
-            '''
-            # theorem 1
-            if (u in vertex_expansion_count):
-                vertex_expansion_count[u] += 1
-            else:
-                vertex_expansion_count[u] = 1
-            '''
-
-        '''    
-        for vertex in vertex_expansion_count.keys():
-            test.assertFalse(expr=vertex_expansion_count[vertex] > 2)
-        '''
 
     def PickSuccessor(self) -> Tuple[int, int]:
         # pick the successor s' that minimizes c(s, s') + g(s')
@@ -127,11 +110,13 @@ class LifelongPlanningAStar(SearchAlgorithm):
         return min_s
     
     def AdaptToChanges(self, changed_edges : List[Tuple[int, int]]) -> Tuple[int, int]:
+        self.k_m = self.k_m + self.heuristic(self.last, self.G.start)
+        self.last = self.G.start
         for e in changed_edges:
             for s, u in self.G.GetVerticesConnectedByEdge(e):
                 for (a, b) in [(s, u), (u, s)]:
                     if self.rhs[a] == self.G.GetCost(a, b) + self.g[b]:
                         if a != self.G.goal:
-                            self.rhs[a] = min([float('inf')] + [self.G.GetCost(a, c) + self.g[c] for c in self.G.GetAdjacent(u)])
-                self.UpdateVertex(a)
+                            self.rhs[a] = min([float('inf')] + [self.G.GetCost(a, c) + self.g[c] for c in self.G.GetAdjacent(a)])
+                    self.UpdateVertex(a)
         self.ComputeShortestPath()
