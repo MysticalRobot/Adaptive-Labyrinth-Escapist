@@ -77,7 +77,7 @@ class DStarLite(SearchAlgorithm):
             self.InsertIntoU(u, self.CalculateKey(u))
 
     # procedure ComputeShortestPath()
-    def ComputeShortestPath(self) -> None:
+    def ComputePath(self) -> None:
         # Process the priority queue until the shortest path is found
         while (self.U and self.U[0].key < self.CalculateKey(self.G.start) or self.rhs[self.G.start] != self.g[self.G.start]):
             top_entry = self.PopFromU()
