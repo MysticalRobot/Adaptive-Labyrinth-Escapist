@@ -10,7 +10,7 @@ class BFS(SearchAlgorithm):
         self.path = None
         
     # computes and stores the shortest path from the goal to the start vertex
-    def ComputeShortestPath(self) -> None:
+    def ComputePath(self) -> None:
         self.path = []
         # consider edge case (common with small mazes)
         if self.G.start == self.G.goal:
@@ -51,4 +51,4 @@ class BFS(SearchAlgorithm):
     
     # computes the path from scratch
     def AdaptToChanges(self, changed_edges : List[Tuple[int, int]]) -> None:
-        self.ComputeShortestPath()
+        self.ComputePath()
