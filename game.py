@@ -1,5 +1,6 @@
 import pygame
 import time
+from typing import Tuple
 from graph import Graph
 from algorithms import algorithms
 
@@ -11,11 +12,11 @@ G = Graph(n=10, allow_diagonal_movement=True)
 algorithm = algorithms[algorithm_name](G)
 algorithm.ComputePath() 
 
-random_ahh_number_chosen_after_trial_and_error = 575
+random_ahh_number_chosen_after_trial_and_error = 600
 # as n increases, the vertex size decreases
-vertex_size = int(random_ahh_number_chosen_after_trial_and_error  * (1 / algorithm.G.old_n)) 
+vertex_size = int(random_ahh_number_chosen_after_trial_and_error  * (1 / G.old_n)) 
 # as n increases, the edge size increases
-edge_size = vertex_size // int(random_ahh_number_chosen_after_trial_and_error  * (1 / algorithm.G.old_n)) if algorithm.G.old_n > 60 else 10
+edge_size = vertex_size // int(random_ahh_number_chosen_after_trial_and_error  * (1 / G.old_n)) if G.old_n > 60 else 10
 
 # load and scale all the images
 amongus = pygame.transform.scale(pygame.image.load("assets/amongus.png"), (vertex_size * 0.8, vertex_size * 0.7))
@@ -37,7 +38,7 @@ font = pygame.font.SysFont(name='helvetica', size=vertex_size // 4)
 
 # initialize pygame
 pygame.init()
-dimension = (algorithm.G.old_n * vertex_size + (algorithm.G.old_n - 1) * edge_size) + algorithm.G.old_n * 2
+dimension = (G.old_n * vertex_size + (G.old_n - 1) * edge_size)
 screen = pygame.display.set_mode((dimension, dimension))
 clock = pygame.time.Clock()
 facing_right = True
@@ -47,58 +48,74 @@ running = True
 
 # returns the color of the edge
 def get_edge_color(edge : int) -> str:
-    if edge == algorithm.G.NO_EDGE:
+    if edge == G.NO_EDGE:
         return 'black'
-    elif edge == algorithm.G.REMOVED_EDGE:
+    elif edge == G.REMOVED_EDGE:
         return 'red'
-    elif edge == algorithm.G.NEW_EDGE: 
+    elif edge == G.NEW_EDGE: 
         return 'green'
     # this case generally isn't used
     else:
         return 'grey'
 
+# returns the edge located at pos on the screen
+def get_edge_at_pos(pos : Tuple[int, int]) -> Tuple[int, int]:
+    y_offset = 0
+    for y in range(G.n):
+        height = edge_size if G.IsHorizontalWall(y) else vertex_size
+        x_offset = 0
+        for x in range(G.n):
+            width = edge_size if G.IsVerticalWall(x) else vertex_size
+            if pos[1] > y_offset and pos[1] < (y_offset + height) and pos[0] > x_offset and pos[0] < (x_offset + width):
+                if G.IsEdge((y, x)) and not (G.IsDiagonalEdge((y, x)) and not G.allow_diagonal_movement):
+                    return (y, x)
+                else:
+                    return (-1, -1)
+            x_offset += width
+        y_offset += height
+    # edge does not exist at pos (i.e. vertex exists at pos)
+    return (-1, -1)
+
 # draws the maze
 def draw_maze() -> None:
     screen.fill('grey') # draw the background
-    row_offset = 0
-    for row in range(algorithm.G.n):
-        is_horizontal_wall = algorithm.G.IsHorizontalWall(row)
-        col_offset = 0
-        for col in range(algorithm.G.n):
-            is_vertical_wall = algorithm.G.IsVerticalWall(col)
-            curr = algorithm.G.maze[row][col]
-            x, y = col + col_offset, row + row_offset
-            if curr == algorithm.G.ENDPOINT: 
+    y_offset = 0
+    for y in range(G.n):
+        height = edge_size if G.IsHorizontalWall(y) else vertex_size
+        x_offset = 0
+        for x in range(G.n):
+            width = edge_size if G.IsVerticalWall(x) else vertex_size
+            curr = G.maze[y][x]
+            if curr == G.ENDPOINT: 
                 if time_since_end_of_game is None:
                     # draw the goal (vent) before the start (amongus) to account for overlap
-                    if (row, col) == algorithm.G.goal:
-                        screen.blit(vent, (x + vertex_size * 0.1, y + vertex_size * 0.5))
-                    if (row, col) == algorithm.G.start:
-                        screen.blit(amongus, (x + vertex_size * 0.1, y + vertex_size * 0.025))
+                    if (y, x) == G.goal:
+                        screen.blit(vent, (x_offset + vertex_size * 0.1, y_offset + vertex_size * 0.5))
+                    elif (y, x) == G.start:
+                        screen.blit(amongus, (x_offset + vertex_size * 0.1, y_offset + vertex_size * 0.025))
+                # draw the venting animation based on time elapsed since end of game
                 else:
                     current_time = time.time_ns()
                     if current_time < time_since_end_of_game + frame_time_length * 5:
-                        screen.blit(venting_frames[0], (x, y))
+                        screen.blit(venting_frames[0], (x_offset, y_offset))
                     # second frame occurs three times in original gif
                     elif current_time < time_since_end_of_game + frame_time_length * 8:
-                        screen.blit(venting_frames[1], (x, y))
+                        screen.blit(venting_frames[1], (x_offset, y_offset))
                     elif current_time < time_since_end_of_game + frame_time_length * 9:
-                        screen.blit(venting_frames[2], (x, y))
+                        screen.blit(venting_frames[2], (x_offset, y_offset))
                     elif current_time < time_since_end_of_game + frame_time_length * 10:
-                        screen.blit(venting_frames[3], (x, y))
+                        screen.blit(venting_frames[3], (x_offset, y_offset))
                     else:
-                        screen.blit(venting_frames[4], (x, y))
+                        screen.blit(venting_frames[4], (x_offset, y_offset))
             # draw og walls black, newly added walls red, and removed walls green
-            elif curr != algorithm.G.EMPTY_OR_EDGE:
-                width = edge_size if is_vertical_wall else vertex_size
-                height = edge_size if is_horizontal_wall else vertex_size
-                pygame.draw.rect(screen, get_edge_color(curr), pygame.Rect(x, y, width, height))
+            elif curr != G.EMPTY_OR_EDGE:
+                pygame.draw.rect(screen, get_edge_color(curr), pygame.Rect(x_offset, y_offset, width, height))
             # draw rhs and g values in the center of vertices for d* lite
-            elif not algorithm.G.IsEdge((row, col)) and algorithm_name == 'd* lite':
-                text = font.render(f'{algorithm.rhs[(row, col)]}:{algorithm.g[(row, col)]}', True, 'black')
-                screen.blit(text, (x + (vertex_size - text.get_width()) // 2, y + (vertex_size - font.get_height()) // 2))
-            col_offset += edge_size if is_vertical_wall else vertex_size
-        row_offset += edge_size if is_horizontal_wall else vertex_size
+            elif not G.IsEdge((y, x)) and algorithm_name == 'd* lite':
+                text = font.render(f'{algorithm.rhs[(y, x)]}:{algorithm.g[(y, x)]}', True, 'black')
+                screen.blit(text, (x_offset + (vertex_size - text.get_width()) // 2, y_offset + (vertex_size - font.get_height()) // 2))
+            x_offset += width
+        y_offset += height
     pygame.display.update() # update the screen
 
 while running:
@@ -106,27 +123,46 @@ while running:
         # stop when user has x'd out the window
         if event.type == pygame.QUIT: 
             running = False
-        if event.type == pygame.KEYDOWN and time_since_end_of_game is None:
+        # the sussy baka imposter has reached the goal vertex
+        elif time_since_end_of_game is not None:
+            continue
+        # flip the state of the edge under the cursor when the mouse is clicked and recompute path
+        elif event.type == pygame.MOUSEBUTTONDOWN: 
+            y, x = get_edge_at_pos(pygame.mouse.get_pos())
+            if (y, x) != (-1, -1):
+                if G.maze[y][x] == G.EMPTY_OR_EDGE or G.maze[y][x] == G.NEW_EDGE:
+                    prev_value = G.maze[y][x]
+                    G.maze[y][x] = G.REMOVED_EDGE
+                    # revert the removal if it eliminates the path from the start to the goal
+                    if not G.PathExists():
+                        G.maze[y][x] = prev_value
+                        # TODO maybe replace with GUI notification
+                        print('Error: cannot remove edge without elimating path')
+                        continue
+                else:
+                    G.maze[y][x] = G.NEW_EDGE
+                algorithm.AdaptToChanges([(y, x)])
+        elif event.type == pygame.KEYDOWN:
             # add edges and recompute path
             if event.key == pygame.K_a:
-                algorithm.AdaptToChanges(algorithm.G.AddEdges())
+                algorithm.AdaptToChanges(G.AddEdges())
             # remove edges and recompute path
             if event.key == pygame.K_d:
-                algorithm.AdaptToChanges(algorithm.G.RemoveEdges())
+                algorithm.AdaptToChanges(G.RemoveEdges())
             # move amongus
             if event.key == pygame.K_w:
                 new_start = algorithm.PickSuccessor()
                 if new_start is None:
-                    new_start = algorithm.G.start
+                    new_start = G.start
                 # change orientation of amongus based on move
-                if new_start[1] < algorithm.G.start[1] and facing_right:
+                if new_start[1] < G.start[1] and facing_right:
                     facing_right = False
                     amongus = pygame.transform.flip(amongus, True, False)
-                elif new_start[1] > algorithm.G.start[1] and not facing_right:
+                elif new_start[1] > G.start[1] and not facing_right:
                     facing_right = True
                     amongus = pygame.transform.flip(amongus, True, False)
-                algorithm.G.MoveStart(new_start)
-                if algorithm.G.start == algorithm.G.goal:
+                G.MoveStart(new_start)
+                if G.start == G.goal:
                     venting_sound.play()
                     time_since_end_of_game = time.time_ns()
                     # flip all the venting frames based on the final orientation
