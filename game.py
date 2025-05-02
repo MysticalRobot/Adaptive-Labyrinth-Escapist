@@ -1,26 +1,10 @@
 import pygame
-<<<<<<< HEAD
-from graph import Graph
-from dstar import DStar
-from bfs import BFS
-from lpastar import LifelongPlanningAStar
-
-# initialize a graph (and generate a maze)
-G = Graph(n=10, allow_diagonal_movement=True)
-
-# load the images and gif
-win = pygame.display.set_mode((512, 512))
-amongus_left = pygame.image.load("amongus_left.png")
-amongus_right = pygame.image.load("amongus_right.png")
-vent = pygame.image.load("vent.png")
-=======
 import time
 from init_algorithm import initialize_algorithm
 
 # generate maze and initialize algorithm
 _, algorithm = initialize_algorithm(algorithm_name='dstar', n=10, allow_diagonal_movement=True)
 algorithm.ComputeShortestPath() 
->>>>>>> 47c27b21b344309ba22b2bf14435c1d4dcf12c8a
 
 random_ahh_number_chosen_after_trial_and_error = 575
 # as n increases, the vertex size decreases
@@ -28,17 +12,10 @@ vertex_size = int(random_ahh_number_chosen_after_trial_and_error  * (1 / algorit
 # as n increases, the edge size increases
 edge_size = vertex_size // int(random_ahh_number_chosen_after_trial_and_error  * (1 / algorithm.G.old_n)) if algorithm.G.old_n > 60 else 10
 
-<<<<<<< HEAD
-# scale the images to draw appropriately
-amongus_left = pygame.transform.scale(amongus_left, (vertex_size, vertex_size))
-amongus_right = pygame.transform.scale(amongus_right, (vertex_size, vertex_size))
-vent = pygame.transform.scale(vent, (vertex_size, vertex_size))
-=======
 # load and scale all the images
 amongus = pygame.transform.scale(pygame.image.load("assets/amongus.png"), (vertex_size * 0.8, vertex_size * 0.7))
 vent = pygame.transform.scale(pygame.image.load("assets/vent.png"), (vertex_size * 0.8, vertex_size * 0.5))
 venting_frames = [pygame.transform.scale(pygame.image.load(f'assets/venting_frame{i}.png'), (vertex_size, vertex_size)) for i in range(1, 6)]
->>>>>>> 47c27b21b344309ba22b2bf14435c1d4dcf12c8a
 
 # initialize mixer for music
 pygame.mixer.init()
@@ -85,13 +62,6 @@ def draw_maze() -> None:
             if curr == algorithm.G.ENDPOINT: 
                 if time_since_end_of_game is None:
                     # draw the goal (vent) before the start (amongus) to account for overlap
-<<<<<<< HEAD
-                    if (row, col) == G.goal:
-                        screen.blit(vent, (G.goal[1] + col_offset, G.goal[0] + row_offset))
-                    if (row, col) == G.start:
-                        amongus = amongus_right if facing_right else amongus_left
-                        screen.blit(amongus, (G.start[1] + col_offset, G.start[0] + row_offset))
-=======
                     if (row, col) == algorithm.G.goal:
                         screen.blit(vent, (x + vertex_size * 0.1, y + vertex_size * 0.5))
                     if (row, col) == algorithm.G.start:
@@ -109,7 +79,6 @@ def draw_maze() -> None:
                         screen.blit(venting_frames[3], (x, y))
                     else:
                         screen.blit(venting_frames[4], (x, y))
->>>>>>> 47c27b21b344309ba22b2bf14435c1d4dcf12c8a
             # draw og walls black, newly added walls red, and removed walls green
             elif curr != algorithm.G.EMPTY_OR_EDGE:
                 width = edge_size if is_vertical_wall else vertex_size
@@ -134,6 +103,8 @@ while running:
             # move amongus
             if event.key == pygame.K_w:
                 new_start = algorithm.PickSuccessor()
+                if new_start is None:
+                    new_start = algorithm.G.start
                 # change orientation of amongus based on move
                 if new_start[1] < algorithm.G.start[1] and facing_right:
                     facing_right = False

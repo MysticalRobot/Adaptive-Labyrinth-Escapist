@@ -4,12 +4,9 @@ class Key:
         self.k2 = k2
 
     def __lt__(self, other):
-        if (self.k1 < other.k1):
-            return True
-        elif (self.k1 == other.k1 and self.k2 <= other.k2):
-            return True
-        else:
-            return False
+        if self.k1 != other.k1:
+            return self.k1 < other.k1
+        return self.k2 < other.k2
         
     def __eq__(self, other):
         return self.k1 == other.k1 and self.k2 == other.k2

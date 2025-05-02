@@ -75,14 +75,17 @@ class Graph():
         removed_edges = []
         for e in self.UpToKSomeWhatCloseEdges(5, select_existing_edges=True):
             prev_value = self.maze[e[0]][e[1]]
-            # try removing edge
+            # try removing the edge
             self.maze[e[0]][e[1]] = self.REMOVED_EDGE
-            # if removing it disconnected the endpoints, restore the edge
+            # if the graph is disconnected, rollback the removal
             if not self.PathExists():
                 self.maze[e[0]][e[1]] = prev_value
-            # otherwise, keep it removed
             else:
                 removed_edges.append(e)
+    
+        # after ensuring connectivity, update the graph state consistently
+        for e in removed_edges:
+            self.maze[e[0]][e[1]] = self.REMOVED_EDGE  # ensure consistency for removed edges
         return removed_edges
     
     # returns up to k edges around self.start that may or may not exist
