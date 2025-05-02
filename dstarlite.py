@@ -24,6 +24,7 @@ class DStarLite(SearchAlgorithm):
         self.k_m = 0
         self.rhs = {}
         self.g = {}
+        self.recently_visited = []  # track recently visited nodes with frequency
 
         for s in self.G.GetVertices():
             self.rhs[s] = float('inf')
@@ -36,10 +37,6 @@ class DStarLite(SearchAlgorithm):
     
     # our Hueristic is based on whether diagonal movement is allowed
     def heuristic(self, u1 : Tuple[int, int], u2 : Tuple[int, int]) -> float:
-        ''' sussy
-        if not self.G.EdgeExists(self.G.GetEdge(u1, u2)):
-            return float('inf')
-        '''
         # Chebyshev Distance
         if self.G.allow_diagonal_movement:
             return max(abs(u1[0] - u2[0]), abs(u1[1] - u2[1]))
@@ -73,26 +70,26 @@ class DStarLite(SearchAlgorithm):
     # procedure UpdateVertex(u)
     def UpdateVertex(self, u : Tuple[int, int]) -> None:
         if (u != self.G.goal):
-            self.rhs[u] = min([float('inf')] + [self.G.GetCost(u, u_adjacent) + self.g[u_adjacent] for u_adjacent in self.G.GetAdjacent(u)])
+            self.rhs[u] = min([float('inf')] + [self.G.GetCost(u, u_adjacent) + self.g[u_adjacent] for u_adjacent in self.G.GetTraversableAdjacent(u)])
         if (self.UContains(u)):
             self.RemoveFromU(u)
         if (self.g[u] != self.rhs[u]):
             self.InsertIntoU(u, self.CalculateKey(u))
 
     # procedure ComputeShortestPath()
-    def ComputePath(self) -> None:
+    def ComputeShortestPath(self) -> None:
+        # Process the priority queue until the shortest path is found
         while (self.U and self.U[0].key < self.CalculateKey(self.G.start) or self.rhs[self.G.start] != self.g[self.G.start]):
             top_entry = self.PopFromU()
             u = top_entry.s
             k_old = top_entry.key
             k_new = self.CalculateKey(u)
-            if (self.g[u] > self.rhs[u]):
+            if k_old < k_new:
+                self.InsertIntoU(u, k_new)
+            elif self.g[u] > self.rhs[u]:
                 self.g[u] = self.rhs[u]
-                # TODO maybe change to GetTraversableAdjacent(u)
                 for s in self.G.GetAdjacent(u):
                     self.UpdateVertex(s)
-            elif (k_old < k_new):
-                self.InsertIntoU(u, k_new)
             else:
                 self.g[u] = float('inf')
                 self.UpdateVertex(u)
@@ -101,22 +98,53 @@ class DStarLite(SearchAlgorithm):
 
     def PickSuccessor(self) -> Tuple[int, int]:
         # pick the successor s' that minimizes c(s, s') + g(s')
-        val, min_s = float('inf'), None
-        # TODO maybe use G.GetTraversableAdjacent
-        for s in self.G.GetAdjacent(self.G.start):
-            curr_val = self.G.GetCost(self.G.start, s) + self.g[s] 
-            if curr_val <= val:
+        val = float('inf')
+        min_s = None
+
+        # Track the previous direction
+        prev_direction = (self.G.start[0] - self.last[0], self.G.start[1] - self.last[1])
+
+        # get traversable adjacent nodes to the current position
+        for s in self.G.GetTraversableAdjacent(self.G.start):
+            # introduce a dynamically increasing penalty for revisiting recently visited nodes
+            # random ahh numbers
+            revisit_penalty = 0.5 + 0.2 * (1.5 ** self.recently_visited.count(s)-1)
+            
+            # compute direction change penalty
+            curr_direction = (s[0] - self.G.start[0], s[1] - self.G.start[1])
+            direction_change_penalty = 0 if prev_direction == curr_direction else 0.5  # penalize direction changes
+            
+            curr_val = self.G.GetCost(self.G.start, s) + self.g[s] + revisit_penalty
+
+            # break ties using the heuristic (closer to the goal is better)
+            if curr_val < val or (curr_val == val and (min_s is None or self.heuristic(s, self.G.goal) < self.heuristic(min_s, self.G.goal))):
                 val, min_s = curr_val, s
+
+        # add the chosen successor to recently visited nodes
+        self.recently_visited.append(min_s)
+        if len(self.recently_visited) > 10:  # Limit the size of recently visited nodes
+            self.recently_visited.pop(0)  # Remove the oldest entry to maintain a sliding window
+
         return min_s
     
     def AdaptToChanges(self, changed_edges : List[Tuple[int, int]]) -> Tuple[int, int]:
-        self.k_m = self.k_m + self.heuristic(self.last, self.G.start)
+        self.k_m +=  self.heuristic(self.last, self.G.start)    # update heuristic shift
         self.last = self.G.start
+
+        # update affected vertices and neighbors
+        affected_vertices = set()
         for e in changed_edges:
             for s, u in self.G.GetVerticesConnectedByEdge(e):
+                affected_vertices.update([s, u])
                 for (a, b) in [(s, u), (u, s)]:
                     if self.rhs[a] == self.G.GetCost(a, b) + self.g[b]:
                         if a != self.G.goal:
                             self.rhs[a] = min([float('inf')] + [self.G.GetCost(a, c) + self.g[c] for c in self.G.GetAdjacent(a)])
                     self.UpdateVertex(a)
-        self.ComputePath()
+        
+        # only recompute path if a significant change occurred
+        if len(affected_vertices) > 5:  # threshold for significant change
+            for vertex in affected_vertices:
+                for neighbor in self.G.GetAdjacent(vertex):
+                    self.UpdateVertex(neighbor)
+            self.ComputePath()

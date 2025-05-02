@@ -93,7 +93,7 @@ def draw_maze() -> None:
                 width = edge_size if is_vertical_wall else vertex_size
                 height = edge_size if is_horizontal_wall else vertex_size
                 pygame.draw.rect(screen, get_edge_color(curr), pygame.Rect(x, y, width, height))
-            # draw rhs and g values in the center of vertices
+            # draw rhs and g values in the center of vertices for d* lite
             elif not algorithm.G.IsEdge((row, col)) and algorithm_name == 'd* lite':
                 text = font.render(f'{algorithm.rhs[(row, col)]}:{algorithm.g[(row, col)]}', True, 'black')
                 screen.blit(text, (x + (vertex_size - text.get_width()) // 2, y + (vertex_size - font.get_height()) // 2))
@@ -116,6 +116,8 @@ while running:
             # move amongus
             if event.key == pygame.K_w:
                 new_start = algorithm.PickSuccessor()
+                if new_start is None:
+                    new_start = algorithm.G.start
                 # change orientation of amongus based on move
                 if new_start[1] < algorithm.G.start[1] and facing_right:
                     facing_right = False
