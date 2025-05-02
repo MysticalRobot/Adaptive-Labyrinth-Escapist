@@ -8,7 +8,7 @@ from algorithms import algorithms
 algorithm_name = 'd* lite'
 
 # generate maze and initialize algorithm
-G = Graph(n=10, allow_diagonal_movement=True)
+G = Graph(n=10, allow_diagonal_movement=False)
 algorithm = algorithms[algorithm_name](G)
 algorithm.ComputePath() 
 
@@ -137,7 +137,7 @@ while running:
                     if not G.PathExists():
                         G.maze[y][x] = prev_value
                         # TODO maybe replace with GUI notification
-                        print('Error: cannot remove edge without elimating path')
+                        print('Error: cannot remove edge without eliminating the path from the start vertex to goal vertex')
                         continue
                 else:
                     G.maze[y][x] = G.NEW_EDGE
