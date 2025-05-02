@@ -13,10 +13,10 @@ The Adaptive-Labyrinth-Escapist (ALE) is a platform upon which any number of sea
     ```
     > e.g. clone the repository with git
 
-3. The only dependency for this project is Pygame, which can be installed via `pip`.
+3. The dependencies for this project are Pygame, Pandas, and Matplotlib, all of which can be installed via `pip`.
 
     ```
-    pip install pygame
+    pip install pygame pandas matplotlib
     ```
 
 4. That's it! 
