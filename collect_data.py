@@ -1,7 +1,11 @@
 from typing import Tuple
 import random
 import time
-from init_algorithm import initialize_algorithm
+from graph import Graph
+from algorithms import algorithms
+
+# TODO add/remove algorithm names from this list
+algorithm_names = list(algorithms.keys())
 
 # use the same seed for all the algorithms to compare them on the exact same mazes
 random_seed = 69
@@ -13,13 +17,15 @@ def measure_performance(algorithm_name : str, n : int, allow_diagonal_movement :
     path_length = 0
     
     # generate maze and initialize algorithm
-    init_time, algorithm = initialize_algorithm(algorithm_name=algorithm_name, n=n, allow_diagonal_movement=allow_diagonal_movement, random_seed=random_seed)
-    algorithm.ComputeShortestPath() 
-    execution_time += init_time
+    G = Graph(n=n, allow_diagonal_movement=allow_diagonal_movement, random_seed=random_seed)
+    start = time.time_ns()
+    algorithm = algorithms[algorithm_name](G)
+    end = time.time_ns()
+    execution_time = end - start
 
     # time initial path computation
     start = time.time_ns()
-    algorithm.ComputeShortestPath() 
+    algorithm.ComputePath() 
     end = time.time_ns()
     execution_time += end - start
 
@@ -51,11 +57,8 @@ def measure_performance(algorithm_name : str, n : int, allow_diagonal_movement :
     
     return (execution_time, path_length)
 
-# TODO add/remove algorithm names here 
-algorithm_names = ['d* lite', 'bfs']
-
 # define range of n to gather data about
-n_lo, n_hi, n_step = 2, 53, 5
+n_lo, n_hi, n_step = 2, 13, 5
 
 # repeat each measurement this many times:
 num_trials = 5
