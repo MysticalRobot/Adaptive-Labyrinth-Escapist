@@ -1,11 +1,16 @@
-from init_algorithm import initialize_algorithm
+from graph import Graph
+from algorithms import algorithms
+
+# TODO change algorithm name here
+algorithm_name = 'd* lite'
 
 # initialize graph and algorithm 
 maze_to_recreate = '' # replace with 'previous_maze.txt' to use the last maze
-_, algorithm = initialize_algorithm(algorithm_name='dstar', n=10, allow_diagonal_movement=True, maze_to_recreate=maze_to_recreate)
+G = Graph(n=10, allow_diagonal_movement=True, maze_to_recreate=maze_to_recreate)
+algorithm = algorithms[algorithm_name](G)
 with open('previous_maze.txt', 'w') as f:
     f.write(algorithm.G.GetRecreationInfo())
-algorithm.ComputeShortestPath() 
+algorithm.ComputePath() 
 print(algorithm.G)
 
 # number of steps before graph changes

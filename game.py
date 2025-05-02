@@ -1,10 +1,15 @@
 import pygame
 import time
-from init_algorithm import initialize_algorithm
+from graph import Graph
+from algorithms import algorithms
+
+# TODO change algorithm name here
+algorithm_name = 'd* lite'
 
 # generate maze and initialize algorithm
-_, algorithm = initialize_algorithm(algorithm_name='dstar', n=10, allow_diagonal_movement=True)
-algorithm.ComputeShortestPath() 
+G = Graph(n=10, allow_diagonal_movement=True)
+algorithm = algorithms[algorithm_name](G)
+algorithm.ComputePath() 
 
 random_ahh_number_chosen_after_trial_and_error = 575
 # as n increases, the vertex size decreases
@@ -17,14 +22,18 @@ amongus = pygame.transform.scale(pygame.image.load("assets/amongus.png"), (verte
 vent = pygame.transform.scale(pygame.image.load("assets/vent.png"), (vertex_size * 0.8, vertex_size * 0.5))
 venting_frames = [pygame.transform.scale(pygame.image.load(f'assets/venting_frame{i}.png'), (vertex_size, vertex_size)) for i in range(1, 6)]
 
-# initialize mixer for music
+# initialize music
 pygame.mixer.init()
 background_music = pygame.mixer.Sound('assets/amongus_drip_song.mp3')
 background_music.set_volume(0.5)
 background_music.play(loops=-1)
-
 venting_sound = pygame.mixer.Sound('assets/venting_sound.mp3')
 venting_sound.set_volume(4)
+
+# initialize font
+pygame.font.init()
+# print(pygame.font.get_fonts())
+font = pygame.font.SysFont(name='helvetica', size=vertex_size // 4)
 
 # initialize pygame
 pygame.init()
@@ -84,6 +93,10 @@ def draw_maze() -> None:
                 width = edge_size if is_vertical_wall else vertex_size
                 height = edge_size if is_horizontal_wall else vertex_size
                 pygame.draw.rect(screen, get_edge_color(curr), pygame.Rect(x, y, width, height))
+            # draw rhs and g values in the center of vertices for d* lite
+            elif not algorithm.G.IsEdge((row, col)) and algorithm_name == 'd* lite':
+                text = font.render(f'{algorithm.rhs[(row, col)]}:{algorithm.g[(row, col)]}', True, 'black')
+                screen.blit(text, (x + (vertex_size - text.get_width()) // 2, y + (vertex_size - font.get_height()) // 2))
             col_offset += edge_size if is_vertical_wall else vertex_size
         row_offset += edge_size if is_horizontal_wall else vertex_size
     pygame.display.update() # update the screen

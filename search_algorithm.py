@@ -5,7 +5,7 @@ from typing import Tuple, List
 class SearchAlgorithm(ABC):
 
     @abstractmethod
-    def ComputeShortestPath(self) -> None:
+    def ComputePath(self) -> None:
         pass
 
     @abstractmethod

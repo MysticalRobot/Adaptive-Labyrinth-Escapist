@@ -3,9 +3,8 @@ from entry import Entry, Key
 from graph import Graph
 from typing import Tuple, List
 from search_algorithm import SearchAlgorithm
-from unittest import TestCase as test
     
-class DStar(SearchAlgorithm):
+class DStarLite(SearchAlgorithm):
     
     # G = Graph
     # S = G.GetVertices()
@@ -148,4 +147,4 @@ class DStar(SearchAlgorithm):
             for vertex in affected_vertices:
                 for neighbor in self.G.GetAdjacent(vertex):
                     self.UpdateVertex(neighbor)
-            self.ComputeShortestPath()
+            self.ComputePath()
