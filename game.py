@@ -8,7 +8,7 @@ from algorithms import algorithms
 algorithm_name = 'd* lite'
 
 # generate maze and initialize algorithm
-G = Graph(n=10, allow_diagonal_movement=False)
+G = Graph(n=10, allow_diagonal_movement=True)
 algorithm = algorithms[algorithm_name](G)
 algorithm.ComputePath() 
 

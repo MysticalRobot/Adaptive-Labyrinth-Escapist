@@ -3,6 +3,7 @@ from entry import Entry, Key
 from graph import Graph
 from typing import Tuple, List
 from search_algorithm import SearchAlgorithm
+import random
     
 class DStarLite(SearchAlgorithm):
     
@@ -95,43 +96,126 @@ class DStarLite(SearchAlgorithm):
                 self.UpdateVertex(u)
                 for s in self.G.GetAdjacent(u) + [u]:
                     self.UpdateVertex(s)
+        
+        # Ensure the start node is not prematurely marked as having reached the goal
+        if self.G.start == self.G.goal and self.rhs[self.G.start] == self.g[self.G.start]:
+            self.g[self.G.start] = self.rhs[self.G.start]
 
     def PickSuccessor(self) -> Tuple[int, int]:
-        # pick the successor s' that minimizes c(s, s') + g(s')
+        """
+        Select the next best successor to move toward the goal. Limit backtracking to no more 
+        than 3 vertices and prioritize forward progress when backtracking exceeds this limit.
+        """
+        # Initialize variables for tracking the best successor
         val = float('inf')
         min_s = None
 
-        # Track the previous direction
+        # Oscillation threshold: If a node is revisited more than this, force movement
+        oscillation_threshold = 3
+
+        # Backtracking limit: Do not go back more than this number of vertices
+        backtracking_limit = 3
+
+        # Define a tolerance for `rhs` values
+        rhs_tolerance = 2  # Treat nodes with `rhs` values within ±2 as equivalent
+
+        # Track the previous direction to apply direction change penalties
         prev_direction = (self.G.start[0] - self.last[0], self.G.start[1] - self.last[1])
 
-        # get traversable adjacent nodes to the current position
-        for s in self.G.GetTraversableAdjacent(self.G.start):
-            # introduce a dynamically increasing penalty for revisiting recently visited nodes
-            # random ahh numbers
-            revisit_penalty = 0.5 + 0.2 * (1.5 ** self.recently_visited.count(s)-1)
-            
-            # compute direction change penalty
-            curr_direction = (s[0] - self.G.start[0], s[1] - self.G.start[1])
-            direction_change_penalty = 0 if prev_direction == curr_direction else 0.5  # penalize direction changes
-            
-            curr_val = self.G.GetCost(self.G.start, s) + self.g[s] + revisit_penalty
+        # Detect oscillation: Count how many times nodes in recently_visited repeat
+        oscillating_nodes = [s for s in self.recently_visited if self.recently_visited.count(s) > oscillation_threshold]
 
-            # break ties using the heuristic (closer to the goal is better)
-            if curr_val < val or (curr_val == val and (min_s is None or self.heuristic(s, self.G.goal) < self.heuristic(min_s, self.G.goal))):
+        # Backtracking logic: Check if the current node is already in the backtracking list
+        if len(self.recently_visited) > backtracking_limit:
+            backtracking_nodes = self.recently_visited[-backtracking_limit:]
+        else:
+            backtracking_nodes = self.recently_visited
+
+        # Iterate over all traversable adjacent nodes
+        for s in self.G.GetTraversableAdjacent(self.G.start):
+            # Check if the node is part of oscillation or backtracking
+            if s in oscillating_nodes or s in backtracking_nodes:
+                # If oscillating or excessive backtracking, deprioritize this node unless no other options exist
+                oscillation_penalty = 100
+                backtracking_penalty = 50
+            else:
+                oscillation_penalty = 0
+                backtracking_penalty = 0
+
+            # Default exploration reward for nodes with inf g-values
+            exploration_reward = 0
+            if self.g[s] == float('inf'):
+                exploration_reward = 50  # Strongly reward unexplored nodes
+
+            # Encourage progression to higher rhs if it resolves oscillation or backtracking
+            if self.rhs[s] > self.rhs[self.G.start] and self.g[s] == float('inf'):
+                if s in oscillating_nodes or s in backtracking_nodes:  # Force breaking oscillation/backtracking
+                    exploration_reward += 50
+                elif self.rhs[s] - self.rhs[self.G.start] <= rhs_tolerance:
+                    exploration_reward += 20  # Moderate reward for reasonable progression
+
+            # Apply penalty for revisiting recently visited nodes
+            revisit_count = self.recently_visited.count(s)
+            revisit_penalty = 5 * (2 ** (revisit_count - 1)) if revisit_count > 0 else 0
+
+            # Apply penalty for direction changes
+            curr_direction = (s[0] - self.G.start[0], s[1] - self.G.start[1])
+            direction_change_penalty = 0.2 if prev_direction != curr_direction else 0
+
+            # Add a progress reward for moving closer to the goal
+            progress_reward = 1.0 / (1 + self.heuristic(s, self.G.goal))  # Reward nodes closer to the goal
+
+            # Add a distance-based reward for nodes closer to the start
+            distance_reward = 1.0 / (1 + self.heuristic(self.G.start, s))  # Reward nodes closer to the start
+
+            # Add stochastic noise to break ties
+            noise = random.uniform(0, 0.01)
+
+            # Calculate the total value for this successor
+            heuristic_weight = 1.5  # Stronger heuristic weight for progress
+            curr_val = (self.G.GetCost(self.G.start, s) + 
+                        self.g[s] + 
+                        revisit_penalty + 
+                        direction_change_penalty + 
+                        heuristic_weight * self.heuristic(s, self.G.goal) -
+                        progress_reward -
+                        distance_reward -
+                        exploration_reward +  # Exploration is rewarded
+                        oscillation_penalty +
+                        backtracking_penalty +
+                        noise)
+
+            # Tie-breaking: Prefer nodes with lower heuristic values within the `rhs_tolerance`
+            if curr_val < val or (
+                abs(curr_val - val) <= 1e-6 and (min_s is None or 
+                abs(self.rhs[s] - self.rhs[min_s]) <= rhs_tolerance and
+                self.heuristic(s, self.G.goal) < self.heuristic(min_s, self.G.goal))
+            ):
                 val, min_s = curr_val, s
 
-        # add the chosen successor to recently visited nodes
+        # Handle cases with oscillation/backtracking or no clear progression
+        if min_s is None or min_s in oscillating_nodes or min_s in backtracking_nodes:
+            # Force movement to a node outside the oscillating/backtracking set
+            unexplored = [s for s in self.G.GetTraversableAdjacent(self.G.start) if s not in oscillating_nodes and s not in backtracking_nodes]
+            if unexplored:
+                min_s = random.choice(unexplored)
+            else:
+                # If all nodes are part of oscillation/backtracking, pick the least-visited node
+                min_s = min(self.G.GetTraversableAdjacent(self.G.start), key=self.recently_visited.count)
+
+        # Add the chosen successor to recently visited nodes
         self.recently_visited.append(min_s)
-        if len(self.recently_visited) > 10:  # Limit the size of recently visited nodes
-            self.recently_visited.pop(0)  # Remove the oldest entry to maintain a sliding window
+        # Limit the size of recently visited nodes to maintain a sliding window
+        if len(self.recently_visited) > 10:
+            self.recently_visited.pop(0)
 
         return min_s
     
-    def AdaptToChanges(self, changed_edges : List[Tuple[int, int]]) -> Tuple[int, int]:
-        self.k_m +=  self.heuristic(self.last, self.G.start)    # update heuristic shift
+    def AdaptToChanges(self, changed_edges: List[Tuple[int, int]]) -> Tuple[int, int]:
+        self.k_m += self.heuristic(self.last, self.G.start)  # Update heuristic shift
         self.last = self.G.start
 
-        # update affected vertices and neighbors
+        # Update affected vertices and neighbors
         affected_vertices = set()
         for e in changed_edges:
             for s, u in self.G.GetVerticesConnectedByEdge(e):
@@ -142,8 +226,8 @@ class DStarLite(SearchAlgorithm):
                             self.rhs[a] = min([float('inf')] + [self.G.GetCost(a, c) + self.g[c] for c in self.G.GetAdjacent(a)])
                     self.UpdateVertex(a)
         
-        # only recompute path if a significant change occurred
-        if len(affected_vertices) > 5:  # threshold for significant change
+        # Force recomputation of paths if a significant change is detected
+        if len(affected_vertices) > 5:  # Threshold for significant change
             for vertex in affected_vertices:
                 for neighbor in self.G.GetAdjacent(vertex):
                     self.UpdateVertex(neighbor)
