@@ -148,7 +148,6 @@ The following are the files you would need to familiarize yourself with and upda
 - `algorithms.py` contains mappings from search algorithm names to their respective classes. This furthers the goal of making ALE extensible as it reduces the amount of code to update in order to integrate additional search algorithms.
 - `dstarlite.py` provides an implementation of the D* Lite algorithm from the paper [**D* Lite**](https://idm-lab.org/bib/abstracts/papers/aaai02b.pdf) written by Sven Koenig and Maxim Likhachev.
 - `entry.py` provides the implementation of the special entries used in the priority queue in `dstarlite.py`.
-- `tests.py` is supposedly where unit tests for D* Lite should go.
 - `bfs.py` provides an implementation of Breath First Search.
 
 ### Visualization and Experimentation

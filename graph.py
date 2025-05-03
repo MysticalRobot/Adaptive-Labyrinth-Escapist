@@ -1,5 +1,6 @@
 import sys
 import random
+from copy import deepcopy
 from typing import Tuple, List, Optional
 
 class Graph():
@@ -14,12 +15,20 @@ class Graph():
 
     # n = number of rows and columns (nxn maze)
     # precondition: n > 1
-    def __init__(self, n : int=2, allow_diagonal_movement : bool=False, maze_to_recreate : str='', random_seed : Optional[int]=None):
+    def __init__(self, n : int=2, allow_diagonal_movement : bool=False, maze_to_recreate : str='', random_seed : Optional[int]=None, graph_to_clone=None):
         # seed random number generator
         if random_seed:
             random.seed(random_seed)
+        # clone the given graph
+        if graph_to_clone:
+            self.old_n = graph_to_clone.old_n
+            self.n = graph_to_clone.n
+            self.allow_diagonal_movement = graph_to_clone.allow_diagonal_movement
+            self.start = tuple(graph_to_clone.start)
+            self.goal = tuple(graph_to_clone.goal)
+            self.maze = deepcopy(graph_to_clone.maze)
         # randomly generate maze
-        if not maze_to_recreate:
+        elif not maze_to_recreate:
             self.old_n = n
             self.n = self.old_n + self.old_n - 1 # even the maze isn't safe from inflation
             self.allow_diagonal_movement = allow_diagonal_movement
@@ -39,7 +48,7 @@ class Graph():
             self.maze[self.start[0]][self.start[1]] = self.ENDPOINT
             self.maze[self.goal[0]][self.goal[1]] = self.ENDPOINT
             # (cheekily) increase the recursion limit to allow for larger maze generation
-            sys.setrecursionlimit(10000) 
+            sys.setrecursionlimit(1000000) 
             # knock down walls until the graph is connected
             visited = [[False] * self.n for _ in range(self.n)] 
             self.GenerateWalls(self.start, visited)

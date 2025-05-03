@@ -7,9 +7,9 @@ algorithm_name = 'd* lite'
 # initialize graph and algorithm 
 maze_to_recreate = '' # replace with 'previous_maze.txt' to use the last maze
 G = Graph(n=10, allow_diagonal_movement=True, maze_to_recreate=maze_to_recreate)
-algorithm = algorithms[algorithm_name](G)
 with open('previous_maze.txt', 'w') as f:
-    f.write(algorithm.G.GetRecreationInfo())
+    f.write(G.GetRecreationInfo())
+algorithm = algorithms[algorithm_name](G)
 algorithm.ComputePath() 
 print(algorithm.G)
 
