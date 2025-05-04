@@ -100,7 +100,6 @@ The following are the files you would need to familiarize yourself with and upda
     For each of your new algorithms, import them and add a mapping from their name to their class.
 
     ```python
-    ...
     from dfs import DFS
 
     # TODO add mappings from algorithm names to their classes here
