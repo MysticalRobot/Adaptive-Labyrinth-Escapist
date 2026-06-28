@@ -11,14 +11,23 @@ The Adaptive-Labyrinth-Escapist (ALE) is a platform upon which any number of sea
 2. Next, obtain a copy of the repository.
 
     ```
-    git clone https://github.iu.edu/ermili/Adaptive-Labyrinth-Escapist.git
+    git clone https://github.com/MysticalRobot/Adaptive-Labyrinth-Escapist.git
     ```
     > e.g. clone the repository with git
 
-3. The dependencies for this project are Pygame, Pandas, and Matplotlib, all of which can be installed via `pip`.
+3. If needed, install Pygame dependencies (see the [Pygame docs](https://www.pygame.org/wiki/Compilation)). 
 
     ```
-    pip install pygame pandas matplotlib
+    sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+    sudo dnf install https://github.com/rpmsphere/noarch/raw/master/r/rpmsphere-release-44-1.noarch.rpm
+    sudo yum install python-devel python3-cython numpy gcc dpkg-dev SDL2_image-devel SDL2_mixer-devel SDL2_ttf-devel SDL2-devel freetype-devel libjpeg-turbo-devel smpeg-devel portmidi-devel
+    ```
+    > example for Fedora Linux 44
+
+4. The dependencies for this project are Pygame, Pandas, and Matplotlib.
+
+    ```
+    pip install -r requirements.txt
     ```
 
 ## Usage Guide
